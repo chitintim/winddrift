@@ -303,7 +303,6 @@
                     <div class="helper-text">West negative, East positive</div>
                 </div>
                 
-                <button type="submit">Calculate</button>
             </form>
             
             <div id="results" class="results">
@@ -370,7 +369,6 @@
                     </div>
                 </div>
                 
-                <button type="submit">Generate Wind Star</button>
             </form>
             
             <div id="windStarResults" class="results">
@@ -448,9 +446,7 @@
             }
         }
         
-        document.getElementById('windCalcForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+        function performCalculation() {
             const windDirection = parseFloat(document.getElementById('windDirection').value);
             const windSpeed = parseFloat(document.getElementById('windSpeed').value);
             const trueCourse = parseFloat(document.getElementById('trueCourse').value);
@@ -458,7 +454,7 @@
             const variation = parseFloat(document.getElementById('variation').value) || 0;
             
             if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(trueCourse) || isNaN(trueAirspeed)) {
-                alert('Please fill in all required fields');
+                document.getElementById('results').classList.remove('show');
                 return;
             }
             
@@ -480,18 +476,16 @@
                 `${result.crosswindComponent.toFixed(0)} kt ${result.crosswindDirection}`;
             
             document.getElementById('results').classList.add('show');
-        });
+        }
         
-        document.getElementById('windStarForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+        function generateWindStar() {
             const windDirection = parseFloat(document.getElementById('wsWindDirection').value);
             const windSpeed = parseFloat(document.getElementById('wsWindSpeed').value);
             const tas = parseFloat(document.getElementById('wsTAS').value);
             const variation = parseFloat(document.getElementById('wsVariation').value) || 0;
             
             if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(tas)) {
-                alert('Please fill in all required fields');
+                document.getElementById('windStarResults').classList.remove('show');
                 return;
             }
             
@@ -542,6 +536,29 @@
             `;
             
             document.getElementById('windStarResults').classList.add('show');
+        }
+        
+        // Add event listeners for dynamic updates
+        document.getElementById('windDirection').addEventListener('input', performCalculation);
+        document.getElementById('windSpeed').addEventListener('input', performCalculation);
+        document.getElementById('trueCourse').addEventListener('input', performCalculation);
+        document.getElementById('trueAirspeed').addEventListener('input', performCalculation);
+        document.getElementById('variation').addEventListener('input', performCalculation);
+        
+        document.getElementById('wsWindDirection').addEventListener('input', generateWindStar);
+        document.getElementById('wsWindSpeed').addEventListener('input', generateWindStar);
+        document.getElementById('wsTAS').addEventListener('input', generateWindStar);
+        document.getElementById('wsVariation').addEventListener('input', generateWindStar);
+        
+        // Keep form submit for mobile keyboard "Done" button
+        document.getElementById('windCalcForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            performCalculation();
+        });
+        
+        document.getElementById('windStarForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateWindStar();
         });
     </script>
 </body>
