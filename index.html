@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Drift Calculator - UK PPL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .result-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .primary-result {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .primary-result .result-value {
+            color: white;
+            font-size: 20px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 3px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 20px 0 15px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Drift Calculator</h1>
+        <p class="subtitle">UK PPL Navigation Assistant</p>
+        
+        <form id="windCalcForm">
+            <div class="section-title">Wind Information</div>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="windDirection">Wind Direction (°)</label>
+                    <input type="number" id="windDirection" min="0" max="360" step="1" required>
+                    <div class="helper-text">From direction (e.g., 270 = from west)</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="windSpeed">Wind Speed (kt)</label>
+                    <input type="number" id="windSpeed" min="0" max="200" step="1" required>
+                    <div class="helper-text">In knots</div>
+                </div>
+            </div>
+            
+            <div class="section-title">Aircraft Information</div>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="trueCourse">True Course (°)</label>
+                    <input type="number" id="trueCourse" min="0" max="360" step="1" required>
+                    <div class="helper-text">Desired track (0-360)</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="trueAirspeed">True Airspeed (kt)</label>
+                    <input type="number" id="trueAirspeed" min="0" max="500" step="1" required>
+                    <div class="helper-text">TAS in knots</div>
+                </div>
+            </div>
+            
+            <div class="section-title">Magnetic Variation (Optional)</div>
+            
+            <div class="input-group">
+                <label for="variation">Variation (°)</label>
+                <input type="number" id="variation" min="-180" max="180" step="0.1" value="0">
+                <div class="helper-text">West negative, East positive (UK typically -2° to 2°)</div>
+            </div>
+            
+            <button type="submit">Calculate</button>
+        </form>
+        
+        <div id="results" class="results">
+            <div class="primary-result">
+                <div class="result-item">
+                    <span class="result-label">True Heading</span>
+                    <span class="result-value" id="trueHeading">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Ground Speed</span>
+                    <span class="result-value" id="groundSpeed">--</span>
+                </div>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Magnetic Heading</span>
+                <span class="result-value" id="magneticHeading">--</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Wind Correction Angle</span>
+                <span class="result-value" id="windCorrectionAngle">--</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Drift Angle</span>
+                <span class="result-value" id="driftAngle">--</span>
+            </div>
+            
+            <div class="section-title">Wind Components</div>
+            
+            <div class="result-item">
+                <span class="result-label">Headwind Component</span>
+                <span class="result-value" id="headwindComponent">--</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Crosswind Component</span>
+                <span class="result-value" id="crosswindComponent">--</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toRadians(degrees) {
+            return degrees * Math.PI / 180;
+        }
+        
+        function toDegrees(radians) {
+            return radians * 180 / Math.PI;
+        }
+        
+        function normalizeHeading(heading) {
+            while (heading < 0) heading += 360;
+            while (heading >= 360) heading -= 360;
+            return heading;
+        }
+        
+        function calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed) {
+            // Convert to radians
+            const wcRad = toRadians(windDir);
+            const tcRad = toRadians(trueCourse);
+            
+            // Calculate wind components relative to desired track
+            const windAngle = windDir - trueCourse;
+            const windAngleRad = toRadians(windAngle);
+            
+            // Crosswind component (positive = from right)
+            const crosswind = windSpeed * Math.sin(windAngleRad);
+            
+            // Headwind component (positive = headwind, negative = tailwind)
+            const headwind = windSpeed * Math.cos(windAngleRad);
+            
+            // Calculate wind correction angle (WCA)
+            let wca = 0;
+            if (trueAirspeed > 0) {
+                const sinWCA = crosswind / trueAirspeed;
+                if (Math.abs(sinWCA) <= 1) {
+                    wca = toDegrees(Math.asin(sinWCA));
+                }
+            }
+            
+            // Calculate true heading
+            const trueHeading = normalizeHeading(trueCourse + wca);
+            
+            // Calculate ground speed using vector addition
+            const gsX = trueAirspeed * Math.sin(toRadians(trueHeading)) + windSpeed * Math.sin(wcRad);
+            const gsY = trueAirspeed * Math.cos(toRadians(trueHeading)) + windSpeed * Math.cos(wcRad);
+            const groundSpeed = Math.sqrt(gsX * gsX + gsY * gsY);
+            
+            // Calculate drift angle (angle between heading and track)
+            const drift = wca;
+            
+            return {
+                trueHeading: trueHeading,
+                groundSpeed: groundSpeed,
+                windCorrectionAngle: wca,
+                driftAngle: drift,
+                headwindComponent: headwind,
+                crosswindComponent: Math.abs(crosswind)
+            };
+        }
+        
+        document.getElementById('windCalcForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get input values
+            const windDirection = parseFloat(document.getElementById('windDirection').value);
+            const windSpeed = parseFloat(document.getElementById('windSpeed').value);
+            const trueCourse = parseFloat(document.getElementById('trueCourse').value);
+            const trueAirspeed = parseFloat(document.getElementById('trueAirspeed').value);
+            const variation = parseFloat(document.getElementById('variation').value) || 0;
+            
+            // Validate inputs
+            if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(trueCourse) || isNaN(trueAirspeed)) {
+                alert('Please fill in all required fields with valid numbers');
+                return;
+            }
+            
+            // Calculate
+            const result = calculateWindTriangle(windDirection, windSpeed, trueCourse, trueAirspeed);
+            
+            // Calculate magnetic heading
+            const magneticHeading = normalizeHeading(result.trueHeading - variation);
+            
+            // Display results
+            document.getElementById('trueHeading').textContent = `${result.trueHeading.toFixed(0)}°`;
+            document.getElementById('groundSpeed').textContent = `${result.groundSpeed.toFixed(0)} kt`;
+            document.getElementById('magneticHeading').textContent = `${magneticHeading.toFixed(0)}°`;
+            document.getElementById('windCorrectionAngle').textContent = 
+                `${result.windCorrectionAngle > 0 ? '+' : ''}${result.windCorrectionAngle.toFixed(1)}°`;
+            document.getElementById('driftAngle').textContent = 
+                `${result.driftAngle > 0 ? '+' : ''}${result.driftAngle.toFixed(1)}°`;
+            
+            // Wind components
+            const headwindText = result.headwindComponent > 0 ? 
+                `${result.headwindComponent.toFixed(0)} kt (headwind)` : 
+                `${Math.abs(result.headwindComponent).toFixed(0)} kt (tailwind)`;
+            document.getElementById('headwindComponent').textContent = headwindText;
+            
+            const crosswindDir = result.windCorrectionAngle > 0 ? 'from right' : 'from left';
+            document.getElementById('crosswindComponent').textContent = 
+                `${result.crosswindComponent.toFixed(0)} kt (${crosswindDir})`;
+            
+            // Show results
+            document.getElementById('results').classList.add('show');
+        });
+        
+        // Add example values for testing
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can uncomment these for quick testing
+            // document.getElementById('windDirection').value = '270';
+            // document.getElementById('windSpeed').value = '20';
+            // document.getElementById('trueCourse').value = '360';
+            // document.getElementById('trueAirspeed').value = '100';
+            // document.getElementById('variation').value = '-2';
+        });
+    </script>
+</body>
+</html>
