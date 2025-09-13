@@ -15,57 +15,85 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 10px;
         }
 
         .container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 15px;
             max-width: 500px;
-            width: 100%;
+            margin: 0 auto;
         }
 
         h1 {
             color: #333;
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 28px;
+            margin-bottom: 5px;
+            font-size: 22px;
         }
 
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             color: #555;
             font-weight: 500;
-            font-size: 14px;
+            font-size: 12px;
         }
 
-        input {
+        input, select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
             transition: border-color 0.3s;
         }
 
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -73,25 +101,25 @@
         .input-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 10px;
         }
 
         button {
             width: 100%;
-            padding: 15px;
+            padding: 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         button:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         button:active {
@@ -99,10 +127,10 @@
         }
 
         .results {
-            margin-top: 30px;
-            padding: 20px;
+            margin-top: 15px;
+            padding: 12px;
             background: #f8f9fa;
-            border-radius: 12px;
+            border-radius: 8px;
             display: none;
         }
 
@@ -113,8 +141,8 @@
         .result-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid #dee2e6;
         }
 
@@ -126,41 +154,41 @@
 
         .result-label {
             color: #666;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .result-value {
             font-weight: 600;
             color: #333;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .primary-result {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
         }
 
         .primary-result .result-value {
             color: white;
-            font-size: 20px;
+            font-size: 16px;
         }
 
         .helper-text {
-            font-size: 12px;
+            font-size: 10px;
             color: #999;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
-            margin: 20px 0 15px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
+            margin: 12px 0 8px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
         }
 
         .section-title:first-child {
@@ -169,13 +197,46 @@
             border-top: none;
         }
 
+        .wind-star-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .wind-star-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .wind-star-heading {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .wind-star-gs {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .wind-star-wca {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
         @media (max-width: 480px) {
             .container {
-                padding: 20px;
+                padding: 12px;
             }
             
             h1 {
-                font-size: 24px;
+                font-size: 20px;
             }
             
             .input-row {
@@ -185,8 +246,8 @@
 
         .error {
             color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
+            font-size: 11px;
+            margin-top: 3px;
             display: none;
         }
 
@@ -200,87 +261,126 @@
         <h1>Wind Drift Calculator</h1>
         <p class="subtitle">UK PPL Navigation Assistant</p>
         
-        <form id="windCalcForm">
-            <div class="section-title">Wind Information</div>
-            
-            <div class="input-row">
-                <div class="input-group">
-                    <label for="windDirection">Wind Direction (°)</label>
-                    <input type="number" id="windDirection" min="0" max="360" step="1" required>
-                    <div class="helper-text">From direction (e.g., 270 = from west)</div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="windSpeed">Wind Speed (kt)</label>
-                    <input type="number" id="windSpeed" min="0" max="200" step="1" required>
-                    <div class="helper-text">In knots</div>
-                </div>
-            </div>
-            
-            <div class="section-title">Aircraft Information</div>
-            
-            <div class="input-row">
-                <div class="input-group">
-                    <label for="trueCourse">True Course (°)</label>
-                    <input type="number" id="trueCourse" min="0" max="360" step="1" required>
-                    <div class="helper-text">Desired track (0-360)</div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="trueAirspeed">True Airspeed (kt)</label>
-                    <input type="number" id="trueAirspeed" min="0" max="500" step="1" required>
-                    <div class="helper-text">TAS in knots</div>
-                </div>
-            </div>
-            
-            <div class="section-title">Magnetic Variation (Optional)</div>
-            
-            <div class="input-group">
-                <label for="variation">Variation (°)</label>
-                <input type="number" id="variation" min="-180" max="180" step="0.1" value="0">
-                <div class="helper-text">West negative, East positive (UK typically -2° to 2°)</div>
-            </div>
-            
-            <button type="submit">Calculate</button>
-        </form>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('calculator')">Calculator</button>
+            <button class="tab" onclick="switchTab('windstar')">Wind Star</button>
+        </div>
         
-        <div id="results" class="results">
-            <div class="primary-result">
-                <div class="result-item">
-                    <span class="result-label">True Heading</span>
-                    <span class="result-value" id="trueHeading">--</span>
+        <div id="calculator-tab" class="tab-content active">
+            <form id="windCalcForm">
+                <div class="section-title">Wind Information</div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="windDirection">Wind Direction (°)</label>
+                        <input type="number" id="windDirection" min="0" max="360" step="1" required>
+                        <div class="helper-text">From direction</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="windSpeed">Wind Speed (kt)</label>
+                        <input type="number" id="windSpeed" min="0" max="200" step="1" required>
+                    </div>
                 </div>
+                
+                <div class="section-title">Aircraft Information</div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="trueCourse">True Course (°)</label>
+                        <input type="number" id="trueCourse" min="0" max="360" step="1" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="trueAirspeed">TAS (kt)</label>
+                        <input type="number" id="trueAirspeed" min="0" max="500" step="1" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="variation">Mag Variation (°)</label>
+                    <input type="number" id="variation" min="-180" max="180" step="0.1" value="0">
+                    <div class="helper-text">West negative, East positive</div>
+                </div>
+                
+                <button type="submit">Calculate</button>
+            </form>
+            
+            <div id="results" class="results">
+                <div class="primary-result">
+                    <div class="result-item">
+                        <span class="result-label">True Heading</span>
+                        <span class="result-value" id="trueHeading">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Ground Speed</span>
+                        <span class="result-value" id="groundSpeed">--</span>
+                    </div>
+                </div>
+                
                 <div class="result-item">
-                    <span class="result-label">Ground Speed</span>
-                    <span class="result-value" id="groundSpeed">--</span>
+                    <span class="result-label">Magnetic Heading</span>
+                    <span class="result-value" id="magneticHeading">--</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">Wind Correction Angle</span>
+                    <span class="result-value" id="windCorrectionAngle">--</span>
+                </div>
+                
+                <div class="section-title">Wind Components</div>
+                
+                <div class="result-item">
+                    <span class="result-label">Head/Tailwind</span>
+                    <span class="result-value" id="headwindComponent">--</span>
+                </div>
+                
+                <div class="result-item">
+                    <span class="result-label">Crosswind</span>
+                    <span class="result-value" id="crosswindComponent">--</span>
                 </div>
             </div>
+        </div>
+        
+        <div id="windstar-tab" class="tab-content">
+            <form id="windStarForm">
+                <div class="section-title">Wind & Aircraft</div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="wsWindDirection">Wind Direction (°)</label>
+                        <input type="number" id="wsWindDirection" min="0" max="360" step="1" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="wsWindSpeed">Wind Speed (kt)</label>
+                        <input type="number" id="wsWindSpeed" min="0" max="200" step="1" required>
+                    </div>
+                </div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="wsTAS">TAS (kt)</label>
+                        <input type="number" id="wsTAS" min="0" max="500" step="1" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="wsVariation">Variation (°)</label>
+                        <input type="number" id="wsVariation" min="-180" max="180" step="0.1" value="0">
+                    </div>
+                </div>
+                
+                <button type="submit">Generate Wind Star</button>
+            </form>
             
-            <div class="result-item">
-                <span class="result-label">Magnetic Heading</span>
-                <span class="result-value" id="magneticHeading">--</span>
-            </div>
-            
-            <div class="result-item">
-                <span class="result-label">Wind Correction Angle</span>
-                <span class="result-value" id="windCorrectionAngle">--</span>
-            </div>
-            
-            <div class="result-item">
-                <span class="result-label">Drift Angle</span>
-                <span class="result-value" id="driftAngle">--</span>
-            </div>
-            
-            <div class="section-title">Wind Components</div>
-            
-            <div class="result-item">
-                <span class="result-label">Headwind Component</span>
-                <span class="result-value" id="headwindComponent">--</span>
-            </div>
-            
-            <div class="result-item">
-                <span class="result-label">Crosswind Component</span>
-                <span class="result-value" id="crosswindComponent">--</span>
+            <div id="windStarResults" class="results">
+                <div class="section-title">8-Point Wind Star (True)</div>
+                <div class="wind-star-grid" id="windStarGrid">
+                </div>
+                
+                <div class="section-title">Quick Reference</div>
+                <div id="windStarSummary" style="font-size: 12px; color: #666; margin-top: 10px;">
+                </div>
             </div>
         </div>
     </div>
@@ -301,21 +401,15 @@
         }
         
         function calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed) {
-            // Convert to radians
             const wcRad = toRadians(windDir);
             const tcRad = toRadians(trueCourse);
             
-            // Calculate wind components relative to desired track
             const windAngle = windDir - trueCourse;
             const windAngleRad = toRadians(windAngle);
             
-            // Crosswind component (positive = from right)
             const crosswind = windSpeed * Math.sin(windAngleRad);
-            
-            // Headwind component (positive = headwind, negative = tailwind)
             const headwind = windSpeed * Math.cos(windAngleRad);
             
-            // Calculate wind correction angle (WCA)
             let wca = 0;
             if (trueAirspeed > 0) {
                 const sinWCA = crosswind / trueAirspeed;
@@ -324,80 +418,130 @@
                 }
             }
             
-            // Calculate true heading
             const trueHeading = normalizeHeading(trueCourse + wca);
             
-            // Calculate ground speed using vector addition
             const gsX = trueAirspeed * Math.sin(toRadians(trueHeading)) + windSpeed * Math.sin(wcRad);
             const gsY = trueAirspeed * Math.cos(toRadians(trueHeading)) + windSpeed * Math.cos(wcRad);
             const groundSpeed = Math.sqrt(gsX * gsX + gsY * gsY);
-            
-            // Calculate drift angle (angle between heading and track)
-            const drift = wca;
             
             return {
                 trueHeading: trueHeading,
                 groundSpeed: groundSpeed,
                 windCorrectionAngle: wca,
-                driftAngle: drift,
+                driftAngle: wca,
                 headwindComponent: headwind,
-                crosswindComponent: Math.abs(crosswind)
+                crosswindComponent: Math.abs(crosswind),
+                crosswindDirection: crosswind > 0 ? 'right' : 'left'
             };
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'calculator') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('calculator-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('windstar-tab').classList.add('active');
+            }
         }
         
         document.getElementById('windCalcForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Get input values
             const windDirection = parseFloat(document.getElementById('windDirection').value);
             const windSpeed = parseFloat(document.getElementById('windSpeed').value);
             const trueCourse = parseFloat(document.getElementById('trueCourse').value);
             const trueAirspeed = parseFloat(document.getElementById('trueAirspeed').value);
             const variation = parseFloat(document.getElementById('variation').value) || 0;
             
-            // Validate inputs
             if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(trueCourse) || isNaN(trueAirspeed)) {
-                alert('Please fill in all required fields with valid numbers');
+                alert('Please fill in all required fields');
                 return;
             }
             
-            // Calculate
             const result = calculateWindTriangle(windDirection, windSpeed, trueCourse, trueAirspeed);
-            
-            // Calculate magnetic heading
             const magneticHeading = normalizeHeading(result.trueHeading - variation);
             
-            // Display results
             document.getElementById('trueHeading').textContent = `${result.trueHeading.toFixed(0)}°`;
             document.getElementById('groundSpeed').textContent = `${result.groundSpeed.toFixed(0)} kt`;
             document.getElementById('magneticHeading').textContent = `${magneticHeading.toFixed(0)}°`;
             document.getElementById('windCorrectionAngle').textContent = 
                 `${result.windCorrectionAngle > 0 ? '+' : ''}${result.windCorrectionAngle.toFixed(1)}°`;
-            document.getElementById('driftAngle').textContent = 
-                `${result.driftAngle > 0 ? '+' : ''}${result.driftAngle.toFixed(1)}°`;
             
-            // Wind components
             const headwindText = result.headwindComponent > 0 ? 
-                `${result.headwindComponent.toFixed(0)} kt (headwind)` : 
-                `${Math.abs(result.headwindComponent).toFixed(0)} kt (tailwind)`;
+                `${result.headwindComponent.toFixed(0)} kt HW` : 
+                `${Math.abs(result.headwindComponent).toFixed(0)} kt TW`;
             document.getElementById('headwindComponent').textContent = headwindText;
             
-            const crosswindDir = result.windCorrectionAngle > 0 ? 'from right' : 'from left';
             document.getElementById('crosswindComponent').textContent = 
-                `${result.crosswindComponent.toFixed(0)} kt (${crosswindDir})`;
+                `${result.crosswindComponent.toFixed(0)} kt ${result.crosswindDirection}`;
             
-            // Show results
             document.getElementById('results').classList.add('show');
         });
         
-        // Add example values for testing
-        document.addEventListener('DOMContentLoaded', function() {
-            // You can uncomment these for quick testing
-            // document.getElementById('windDirection').value = '270';
-            // document.getElementById('windSpeed').value = '20';
-            // document.getElementById('trueCourse').value = '360';
-            // document.getElementById('trueAirspeed').value = '100';
-            // document.getElementById('variation').value = '-2';
+        document.getElementById('windStarForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const windDirection = parseFloat(document.getElementById('wsWindDirection').value);
+            const windSpeed = parseFloat(document.getElementById('wsWindSpeed').value);
+            const tas = parseFloat(document.getElementById('wsTAS').value);
+            const variation = parseFloat(document.getElementById('wsVariation').value) || 0;
+            
+            if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(tas)) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            const directions = [
+                { name: 'N', course: 0 },
+                { name: 'NE', course: 45 },
+                { name: 'E', course: 90 },
+                { name: 'SE', course: 135 },
+                { name: 'S', course: 180 },
+                { name: 'SW', course: 225 },
+                { name: 'W', course: 270 },
+                { name: 'NW', course: 315 }
+            ];
+            
+            const gridHTML = directions.map(dir => {
+                const result = calculateWindTriangle(windDirection, windSpeed, dir.course, tas);
+                const magHeading = normalizeHeading(result.trueHeading - variation);
+                
+                return `
+                    <div class="wind-star-item">
+                        <div class="wind-star-heading">${dir.name}: ${result.trueHeading.toFixed(0)}°T</div>
+                        <div class="wind-star-gs">GS: ${result.groundSpeed.toFixed(0)} kt</div>
+                        <div class="wind-star-wca">WCA: ${result.windCorrectionAngle > 0 ? '+' : ''}${result.windCorrectionAngle.toFixed(0)}°</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('windStarGrid').innerHTML = gridHTML;
+            
+            const bestGS = Math.max(...directions.map(d => 
+                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
+            ));
+            const worstGS = Math.min(...directions.map(d => 
+                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
+            ));
+            
+            const bestDir = directions.find(d => 
+                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - bestGS) < 0.1
+            );
+            const worstDir = directions.find(d => 
+                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - worstGS) < 0.1
+            );
+            
+            document.getElementById('windStarSummary').innerHTML = `
+                <strong>Best GS:</strong> ${bestDir.name} at ${bestGS.toFixed(0)} kt<br>
+                <strong>Worst GS:</strong> ${worstDir.name} at ${worstGS.toFixed(0)} kt<br>
+                <strong>Wind:</strong> ${windDirection}°/${windSpeed} kt
+            `;
+            
+            document.getElementById('windStarResults').classList.add('show');
         });
     </script>
 </body>
