@@ -23,7 +23,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             padding: 15px;
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
         }
 
@@ -199,9 +199,13 @@
 
         .wind-star-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
             gap: 8px;
             margin-top: 10px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .wind-star-item {
@@ -210,6 +214,15 @@
             border-radius: 6px;
             text-align: center;
             border: 1px solid #dee2e6;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .wind-star-item.empty {
+            background: transparent;
+            border: none;
         }
 
         .wind-star-heading {
@@ -225,9 +238,53 @@
         }
 
         .wind-star-wca {
-            font-size: 11px;
-            color: #999;
+            font-size: 12px;
+            color: #007bff;
             margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .leg-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .leg-table th, .leg-table td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .leg-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .leg-table input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .leg-table .output {
+            background: #f0f8ff;
+            font-weight: 500;
+        }
+
+        .add-leg-btn {
+            padding: 8px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .total-row {
+            font-weight: 600;
+            background: #e8f4fd;
         }
 
         @media (max-width: 480px) {
@@ -241,6 +298,14 @@
             
             .input-row {
                 grid-template-columns: 1fr;
+            }
+
+            .leg-table {
+                font-size: 12px;
+            }
+
+            .leg-table th, .leg-table td {
+                padding: 4px;
             }
         }
 
@@ -264,6 +329,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('calculator')">Calculator</button>
             <button class="tab" onclick="switchTab('windstar')">Wind Star</button>
+            <button class="tab" onclick="switchTab('flightplan')">Flight Plan</button>
         </div>
         
         <div id="calculator-tab" class="tab-content active">
@@ -293,7 +359,7 @@
                     
                     <div class="input-group">
                         <label for="trueAirspeed">TAS (kt)</label>
-                        <input type="number" id="trueAirspeed" min="0" max="500" step="1" value="105" required>
+                        <input type="number" id="trueAirspeed" min="0" max="500" step="1" value="98" required>
                     </div>
                 </div>
                 
@@ -360,7 +426,7 @@
                 <div class="input-row">
                     <div class="input-group">
                         <label for="wsTAS">TAS (kt)</label>
-                        <input type="number" id="wsTAS" min="0" max="500" step="1" value="105" required>
+                        <input type="number" id="wsTAS" min="0" max="500" step="1" value="98" required>
                     </div>
                     
                     <div class="input-group">
@@ -372,7 +438,7 @@
             </form>
             
             <div id="windStarResults" class="results">
-                <div class="section-title">8-Point Wind Star (True)</div>
+                <div class="section-title">8-Point Wind Star (Corrections to Steer)</div>
                 <div class="wind-star-grid" id="windStarGrid">
                 </div>
                 
@@ -380,6 +446,69 @@
                 <div id="windStarSummary" style="font-size: 12px; color: #666; margin-top: 10px;">
                 </div>
             </div>
+        </div>
+
+        <div id="flightplan-tab" class="tab-content">
+            <form id="flightPlanForm">
+                <div class="section-title">Wind & Aircraft Setup</div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="fpWindDirection">Wind Dir (°)</label>
+                        <input type="number" id="fpWindDirection" min="0" max="360" step="1" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="fpWindSpeed">Wind Speed (kt)</label>
+                        <input type="number" id="fpWindSpeed" min="0" max="200" step="1" required>
+                    </div>
+                </div>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="fpTAS">TAS (kt)</label>
+                        <input type="number" id="fpTAS" min="0" max="500" step="1" value="98" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="fpVariation">Variation (°)</label>
+                        <input type="number" id="fpVariation" min="-180" max="180" step="0.1" value="-0.5">
+                    </div>
+                </div>
+                
+                <div class="section-title">Flight Legs</div>
+                <table class="leg-table" id="legTable">
+                    <thead>
+                        <tr>
+                            <th>Leg</th>
+                            <th>Track (°T)</th>
+                            <th>Distance (nm)</th>
+                            <th>Hdg (°M)</th>
+                            <th>GS (kt)</th>
+                            <th>Time (min)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="legTableBody">
+                        <tr>
+                            <td>1</td>
+                            <td><input type="number" class="track-input" min="0" max="360" step="1"></td>
+                            <td><input type="number" class="distance-input" min="0" step="0.1"></td>
+                            <td class="output heading-output">--</td>
+                            <td class="output gs-output">--</td>
+                            <td class="output time-output">--</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="2">Total</td>
+                            <td id="totalDistance">0</td>
+                            <td colspan="2"></td>
+                            <td id="totalTime">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <button type="button" class="add-leg-btn" onclick="addLeg()">+ Add Leg</button>
+            </form>
         </div>
     </div>
     
@@ -440,9 +569,12 @@
             if (tab === 'calculator') {
                 document.querySelector('.tab:nth-child(1)').classList.add('active');
                 document.getElementById('calculator-tab').classList.add('active');
-            } else {
+            } else if (tab === 'windstar') {
                 document.querySelector('.tab:nth-child(2)').classList.add('active');
                 document.getElementById('windstar-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('flightplan-tab').classList.add('active');
             }
         }
         
@@ -490,30 +622,33 @@
             }
             
             const directions = [
-                { name: 'N', course: 0 },
-                { name: 'NE', course: 45 },
-                { name: 'E', course: 90 },
-                { name: 'SE', course: 135 },
-                { name: 'S', course: 180 },
-                { name: 'SW', course: 225 },
-                { name: 'W', course: 270 },
-                { name: 'NW', course: 315 }
+                { name: 'N', course: 0, position: 1 },
+                { name: 'NE', course: 45, position: 2 },
+                { name: 'E', course: 90, position: 5 },
+                { name: 'SE', course: 135, position: 8 },
+                { name: 'S', course: 180, position: 7 },
+                { name: 'SW', course: 225, position: 6 },
+                { name: 'W', course: 270, position: 3 },
+                { name: 'NW', course: 315, position: 0 }
             ];
             
-            const gridHTML = directions.map(dir => {
+            const gridItems = new Array(9);
+            gridItems[4] = '<div class="wind-star-item empty"></div>';
+            
+            directions.forEach(dir => {
                 const result = calculateWindTriangle(windDirection, windSpeed, dir.course, tas);
-                const magHeading = normalizeHeading(result.trueHeading - variation);
+                const wcaSign = result.windCorrectionAngle > 0 ? '+' : '';
                 
-                return `
+                gridItems[dir.position] = `
                     <div class="wind-star-item">
-                        <div class="wind-star-heading">${dir.name}: ${result.trueHeading.toFixed(0)}°T</div>
+                        <div class="wind-star-heading">${dir.name}</div>
                         <div class="wind-star-gs">GS: ${result.groundSpeed.toFixed(0)} kt</div>
-                        <div class="wind-star-wca">WCA: ${result.windCorrectionAngle > 0 ? '+' : ''}${result.windCorrectionAngle.toFixed(0)}°</div>
+                        <div class="wind-star-wca">${wcaSign}${result.windCorrectionAngle.toFixed(0)}°</div>
                     </div>
                 `;
-            }).join('');
+            });
             
-            document.getElementById('windStarGrid').innerHTML = gridHTML;
+            document.getElementById('windStarGrid').innerHTML = gridItems.join('');
             
             const bestGS = Math.max(...directions.map(d => 
                 calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
@@ -537,6 +672,80 @@
             
             document.getElementById('windStarResults').classList.add('show');
         }
+
+        function calculateLeg(row) {
+            const windDirection = parseFloat(document.getElementById('fpWindDirection').value);
+            const windSpeed = parseFloat(document.getElementById('fpWindSpeed').value);
+            const tas = parseFloat(document.getElementById('fpTAS').value);
+            const variation = parseFloat(document.getElementById('fpVariation').value) || 0;
+            
+            const trackInput = row.querySelector('.track-input');
+            const distanceInput = row.querySelector('.distance-input');
+            const track = parseFloat(trackInput.value);
+            const distance = parseFloat(distanceInput.value);
+            
+            const headingOutput = row.querySelector('.heading-output');
+            const gsOutput = row.querySelector('.gs-output');
+            const timeOutput = row.querySelector('.time-output');
+            
+            if (!isNaN(windDirection) && !isNaN(windSpeed) && !isNaN(tas) && !isNaN(track) && !isNaN(distance)) {
+                const result = calculateWindTriangle(windDirection, windSpeed, track, tas);
+                const magneticHeading = normalizeHeading(result.trueHeading - variation);
+                const time = (distance / result.groundSpeed) * 60;
+                
+                headingOutput.textContent = `${magneticHeading.toFixed(0)}°`;
+                gsOutput.textContent = result.groundSpeed.toFixed(0);
+                timeOutput.textContent = time.toFixed(1);
+            } else {
+                headingOutput.textContent = '--';
+                gsOutput.textContent = '--';
+                timeOutput.textContent = '--';
+            }
+            
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const rows = document.querySelectorAll('#legTableBody tr');
+            let totalDistance = 0;
+            let totalTime = 0;
+            
+            rows.forEach(row => {
+                const distance = parseFloat(row.querySelector('.distance-input').value) || 0;
+                const timeText = row.querySelector('.time-output').textContent;
+                const time = timeText !== '--' ? parseFloat(timeText) : 0;
+                
+                totalDistance += distance;
+                totalTime += time;
+            });
+            
+            document.getElementById('totalDistance').textContent = totalDistance.toFixed(1);
+            document.getElementById('totalTime').textContent = totalTime.toFixed(1);
+        }
+
+        let legCount = 1;
+        
+        function addLeg() {
+            legCount++;
+            const tbody = document.getElementById('legTableBody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${legCount}</td>
+                <td><input type="number" class="track-input" min="0" max="360" step="1"></td>
+                <td><input type="number" class="distance-input" min="0" step="0.1"></td>
+                <td class="output heading-output">--</td>
+                <td class="output gs-output">--</td>
+                <td class="output time-output">--</td>
+            `;
+            tbody.appendChild(newRow);
+            
+            // Add event listeners to new inputs
+            const trackInput = newRow.querySelector('.track-input');
+            const distanceInput = newRow.querySelector('.distance-input');
+            
+            trackInput.addEventListener('input', () => calculateLeg(newRow));
+            distanceInput.addEventListener('input', () => calculateLeg(newRow));
+        }
         
         // Add event listeners for dynamic updates
         document.getElementById('windDirection').addEventListener('input', performCalculation);
@@ -549,6 +758,28 @@
         document.getElementById('wsWindSpeed').addEventListener('input', generateWindStar);
         document.getElementById('wsTAS').addEventListener('input', generateWindStar);
         document.getElementById('wsVariation').addEventListener('input', generateWindStar);
+
+        // Flight plan listeners
+        document.getElementById('fpWindDirection').addEventListener('input', () => {
+            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
+        });
+        document.getElementById('fpWindSpeed').addEventListener('input', () => {
+            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
+        });
+        document.getElementById('fpTAS').addEventListener('input', () => {
+            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
+        });
+        document.getElementById('fpVariation').addEventListener('input', () => {
+            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
+        });
+        
+        // Initial leg event listeners
+        document.querySelectorAll('.track-input').forEach((input, index) => {
+            input.addEventListener('input', () => calculateLeg(input.closest('tr')));
+        });
+        document.querySelectorAll('.distance-input').forEach((input, index) => {
+            input.addEventListener('input', () => calculateLeg(input.closest('tr')));
+        });
         
         // Keep form submit for mobile keyboard "Done" button
         document.getElementById('windCalcForm').addEventListener('submit', function(e) {
@@ -559,6 +790,10 @@
         document.getElementById('windStarForm').addEventListener('submit', function(e) {
             e.preventDefault();
             generateWindStar();
+        });
+
+        document.getElementById('flightPlanForm').addEventListener('submit', function(e) {
+            e.preventDefault();
         });
     </script>
 </body>
