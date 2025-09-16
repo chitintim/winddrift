@@ -56,12 +56,13 @@
 
         .airport-btn {
             padding: 8px;
-            background: #f8f9fa;
+            background: white;
             border: 1px solid #dee2e6;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
+            color: #333;
             transition: all 0.3s;
             position: relative;
             display: flex;
@@ -735,8 +736,10 @@
             let ceiling = 999999;
             let visibility = 10000;
             
-            // Parse visibility
-            const visMatch = line.match(/(\d{4}|\d+SM|CAVOK)/);
+            // Parse visibility - must come after wind (KT) and before clouds
+            // Remove wind portion first to avoid matching wind digits
+            const lineWithoutWind = line.replace(/(\d{3}|VRB)(\d{2,3})(G\d{2,3})?KT/, '');
+            const visMatch = lineWithoutWind.match(/\s(\d{4}|\d+SM|CAVOK)\s/);
             if (visMatch) {
                 if (visMatch[1] === 'CAVOK') {
                     visibility = 10000;
@@ -790,8 +793,9 @@
                 </div>`;
             }
             
-            // Visibility
-            const visMatch = line.match(/(\d{4}|\d+SM|CAVOK)/);
+            // Visibility - parse after removing wind to avoid confusion
+            const lineWithoutWind = line.replace(/(\d{3}|VRB)(\d{2,3})(G\d{2,3})?KT/, '');
+            const visMatch = lineWithoutWind.match(/\s(\d{4}|\d+SM|CAVOK)\s/);
             if (visMatch) {
                 let visStr = '';
                 if (visMatch[1] === 'CAVOK') {
