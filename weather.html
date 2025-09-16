@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Drift Calculator - UK PPL</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 15px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 22px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #weatherMap {
+            height: 400px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .airport-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .airport-btn {
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .airport-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .airport-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .weather-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .weather-display.show {
+            display: block;
+        }
+
+        .weather-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .weather-time {
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .metar-text, .taf-text {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        .decoded-weather {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .decoded-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .decoded-item:last-child {
+            border-bottom: none;
+        }
+
+        .decoded-label {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .decoded-value {
+            font-weight: 500;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: #218838;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin: 12px 0 8px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                width: 100%;
+            }
+            
+            #weatherMap {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Drift Calculator</h1>
+        <p class="subtitle">UK PPL Navigation Assistant</p>
+        
+        <div class="tabs">
+            <button class="tab" onclick="window.location.href='index.html'">Calculator</button>
+            <button class="tab" onclick="window.location.href='index.html#windstar'">Wind Star</button>
+            <button class="tab" onclick="window.location.href='index.html#flightplan'">Flight Plan</button>
+            <button class="tab active">Weather</button>
+        </div>
+        
+        <div id="weather-tab" class="tab-content active">
+            <div class="section-title">Southern England Airports</div>
+            
+            <div id="weatherMap"></div>
+            
+            <div class="section-title">Quick Access</div>
+            <div class="airport-list" id="airportList">
+                <button class="airport-btn" onclick="fetchWeather('EGLL')">EGLL (Heathrow)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGLF')">EGLF (Farnborough)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGTB')">EGTB (Wycombe)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGTK')">EGTK (Oxford)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGVN')">EGVN (Brize Norton)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGLK')">EGLK (Blackbushe)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGKA')">EGKA (Shoreham)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHR')">EGHR (Goodwood)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHI')">EGHI (Southampton)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHH')">EGHH (Bournemouth)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGKK')">EGKK (Gatwick)</button>
+                <button class="airport-btn" onclick="fetchWeather('EGMD')">EGMD (Lydd)</button>
+            </div>
+            
+            <div id="weatherDisplay" class="weather-display">
+                <div class="weather-header">
+                    <span id="airportName">Select an airport</span>
+                    <button class="refresh-btn" onclick="refreshWeather()">Refresh</button>
+                </div>
+                
+                <div id="metarSection">
+                    <div class="section-title">METAR</div>
+                    <div class="metar-text" id="metarText">--</div>
+                    <div class="decoded-weather" id="metarDecoded"></div>
+                </div>
+                
+                <div id="tafSection">
+                    <div class="section-title">TAF</div>
+                    <div class="taf-text" id="tafText">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let currentAirport = null;
+        let markers = {};
+        
+        const airports = {
+            'EGLL': { name: 'London Heathrow', lat: 51.4700, lon: -0.4543 },
+            'EGLF': { name: 'Farnborough', lat: 51.2758, lon: -0.7763 },
+            'EGTB': { name: 'Wycombe Air Park', lat: 51.6117, lon: -0.8083 },
+            'EGTK': { name: 'Oxford Kidlington', lat: 51.8369, lon: -1.3200 },
+            'EGVN': { name: 'RAF Brize Norton', lat: 51.7500, lon: -1.5836 },
+            'EGLK': { name: 'Blackbushe', lat: 51.3239, lon: -0.8475 },
+            'EGKA': { name: 'Shoreham', lat: 50.8356, lon: -0.2972 },
+            'EGHR': { name: 'Goodwood', lat: 50.8594, lon: -0.7592 },
+            'EGHI': { name: 'Southampton', lat: 50.9503, lon: -1.3568 },
+            'EGHH': { name: 'Bournemouth', lat: 50.7800, lon: -1.8425 },
+            'EGKK': { name: 'London Gatwick', lat: 51.1481, lon: -0.1903 },
+            'EGMD': { name: 'Lydd', lat: 50.9561, lon: 0.9392 },
+            'EGLC': { name: 'London City', lat: 51.5053, lon: 0.0553 },
+            'EGKB': { name: 'Biggin Hill', lat: 51.3308, lon: 0.0325 },
+            'EGTO': { name: 'Rochester', lat: 51.3519, lon: 0.5033 },
+            'EGSC': { name: 'Cambridge', lat: 52.2050, lon: 0.1750 }
+        };
+        
+        function initMap() {
+            map = L.map('weatherMap').setView([51.3, -0.5], 8);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 11,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add markers for each airport
+            Object.keys(airports).forEach(icao => {
+                const airport = airports[icao];
+                const marker = L.marker([airport.lat, airport.lon])
+                    .bindPopup(`<b>${icao}</b><br>${airport.name}<br><a href="#" onclick="fetchWeather('${icao}'); return false;">Get Weather</a>`)
+                    .addTo(map);
+                markers[icao] = marker;
+            });
+        }
+        
+        async function fetchWeather(icao) {
+            currentAirport = icao;
+            
+            // Highlight selected button
+            document.querySelectorAll('.airport-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target?.classList.add('selected');
+            
+            // Show loading state
+            document.getElementById('weatherDisplay').classList.add('show');
+            document.getElementById('airportName').textContent = `${icao} - ${airports[icao]?.name || 'Loading...'}`;
+            document.getElementById('metarText').innerHTML = '<div class="loading">Fetching METAR...</div>';
+            document.getElementById('tafText').innerHTML = '<div class="loading">Fetching TAF...</div>';
+            document.getElementById('metarDecoded').innerHTML = '';
+            
+            try {
+                // Fetch METAR
+                const metarResponse = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
+                const metarData = await metarResponse.json();
+                
+                if (metarData && metarData.length > 0) {
+                    const metar = metarData[0];
+                    document.getElementById('metarText').textContent = metar.rawOb || 'No METAR available';
+                    decodeMetar(metar);
+                } else {
+                    document.getElementById('metarText').innerHTML = '<div class="error">No METAR available</div>';
+                }
+                
+                // Fetch TAF
+                const tafResponse = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
+                const tafData = await tafResponse.json();
+                
+                if (tafData && tafData.length > 0) {
+                    const taf = tafData[0];
+                    document.getElementById('tafText').textContent = taf.rawTAF || 'No TAF available';
+                } else {
+                    document.getElementById('tafText').innerHTML = '<div class="error">No TAF available (may not be issued for this airport)</div>';
+                }
+                
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+                document.getElementById('metarText').innerHTML = '<div class="error">Failed to fetch weather data</div>';
+                document.getElementById('tafText').innerHTML = '<div class="error">Failed to fetch weather data</div>';
+            }
+        }
+        
+        function decodeMetar(metar) {
+            let decoded = '<div class="decoded-weather">';
+            
+            // Time
+            if (metar.reportTime) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Observation Time</span>
+                    <span class="decoded-value">${new Date(metar.reportTime).toUTCString()}</span>
+                </div>`;
+            }
+            
+            // Wind
+            if (metar.wdir !== undefined && metar.wspd !== undefined) {
+                let windStr = metar.wdir === 'VRB' ? 'Variable' : `${metar.wdir}°`;
+                windStr += ` at ${metar.wspd} kt`;
+                if (metar.wgst) windStr += ` gusting ${metar.wgst} kt`;
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Wind</span>
+                    <span class="decoded-value">${windStr}</span>
+                </div>`;
+            }
+            
+            // Visibility
+            if (metar.visib) {
+                const vis = metar.visib === '10000' ? '10km+' : `${(parseFloat(metar.visib)/1000).toFixed(1)}km`;
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Visibility</span>
+                    <span class="decoded-value">${vis}</span>
+                </div>`;
+            }
+            
+            // Temperature & Dewpoint
+            if (metar.temp !== undefined) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Temperature</span>
+                    <span class="decoded-value">${metar.temp}°C / Dewpoint: ${metar.dewp}°C</span>
+                </div>`;
+            }
+            
+            // QNH
+            if (metar.altim) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">QNH</span>
+                    <span class="decoded-value">${metar.altim} hPa</span>
+                </div>`;
+            }
+            
+            // Clouds
+            if (metar.clouds && metar.clouds.length > 0) {
+                const cloudStr = metar.clouds.map(c => `${c.cover} ${c.base}'`).join(', ');
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Clouds</span>
+                    <span class="decoded-value">${cloudStr}</span>
+                </div>`;
+            }
+            
+            decoded += '</div>';
+            document.getElementById('metarDecoded').innerHTML = decoded;
+        }
+        
+        function refreshWeather() {
+            if (currentAirport) {
+                fetchWeather(currentAirport);
+            }
+        }
+        
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            // Auto-fetch Heathrow weather
+            fetchWeather('EGLL');
+        });
+    </script>
+</body>
+</html>
