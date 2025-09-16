@@ -28,6 +28,14 @@ A comprehensive web-based aviation tool for UK PPL pilots, providing wind calcul
 - Wind speed and direction at any point via bilinear interpolation
 - Color-coded wind strength indicators
 
+### ✈️ Flight Plan Map
+- Click-to-add waypoints on interactive map
+- Automatic distance and track calculations between waypoints
+- Altitude selection for each leg (0-15,000ft)
+- Automatic wind fetching at leg midpoints
+- Departure time setting for accurate wind forecasts
+- Export complete flight plan to drift calculator
+
 ## Technical Details
 
 ### Data Sources
@@ -54,7 +62,8 @@ Simply open `index.html` in a modern web browser. The application is fully clien
 ### Navigation
 - Use the tab buttons to switch between features
 - All times display in both Zulu (UTC) and UK local time
-- Mobile-responsive design with 2x2 grid navigation on small screens
+- Mobile-responsive design with 3-column grid navigation on small screens
+- 5 main sections: Drift Calc, Wind Star, Weather, Spot Wind, Flight Plan
 
 ## Browser Requirements
 - Modern browser with ES6+ support
@@ -70,6 +79,7 @@ Simply open `index.html` in a modern web browser. The application is fully clien
 ├── windstar.html       # Wind star display
 ├── weather.html        # Weather decoder
 ├── spotwind.html       # Spot wind visualization
+├── flightplan.html     # Flight plan map
 ├── common.js           # Shared functions
 └── styles.css          # Common styles
 ```

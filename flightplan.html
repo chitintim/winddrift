@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Drift Calculator - Flight Plan Map</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Page-specific styles */
+        .map-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        #planMap {
+            height: 500px;
+            border-radius: 8px;
+            cursor: crosshair;
+            position: relative;
+        }
+        
+        .waypoint-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .waypoint-list {
+            margin-top: 10px;
+        }
+        
+        .waypoint-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .waypoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .waypoint-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .waypoint-coords {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .leg-info {
+            border-top: 1px solid #e9ecef;
+            padding-top: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        
+        .leg-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
+        .leg-label {
+            color: #666;
+        }
+        
+        .leg-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .altitude-input {
+            width: 80px;
+            padding: 4px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .wind-info {
+            background: #e7f3ff;
+            border-radius: 4px;
+            padding: 6px;
+            margin-top: 6px;
+            font-size: 11px;
+        }
+        
+        .wind-loading {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .departure-time-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .time-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .delete-waypoint {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .delete-waypoint:hover {
+            background: #c82333;
+        }
+        
+        .clear-all-btn {
+            width: 100%;
+            padding: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        
+        .clear-all-btn:hover {
+            background: #5a6268;
+        }
+        
+        .total-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .total-label {
+            color: #0066cc;
+            font-weight: 500;
+        }
+        
+        .total-value {
+            font-weight: 700;
+            color: #0066cc;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #856404;
+        }
+        
+        .waypoint-marker {
+            background: #007bff;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .waypoint-label {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        
+        .flight-path {
+            stroke: #007bff;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5, 5;
+        }
+        
+        @media (max-width: 768px) {
+            .map-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .waypoint-panel {
+                max-height: none;
+            }
+        }
+        
+        .export-btn {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        
+        .export-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Drift Calculator</h1>
+        <p class="subtitle">Flight Plan Map</p>
+        <div class="time-display">
+            <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
+            <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
+        </div>
+        
+        <div class="tabs">
+            <a href="index.html" class="tab">Drift Calc</a>
+            <a href="windstar.html" class="tab">Wind Star</a>
+            <a href="weather.html" class="tab">Weather</a>
+            <a href="spotwind.html" class="tab">Spot Wind</a>
+            <a href="flightplan.html" class="tab">Flight Plan</a>
+        </div>
+        
+        <div class="map-container">
+            <div id="planMap"></div>
+            
+            <div class="waypoint-panel">
+                <div class="instructions">
+                    📍 Click on the map to add waypoints<br>
+                    ✈️ Waypoints connect in order<br>
+                    🌬️ Wind data fetched at leg midpoints<br>
+                    🗑️ Click delete to remove a waypoint
+                </div>
+                
+                <div class="departure-time-section">
+                    <label for="departureTime" style="font-size: 13px; font-weight: 600; color: #333;">Departure Time (Zulu)</label>
+                    <input type="datetime-local" id="departureTime" class="time-input">
+                </div>
+                
+                <div class="section-title">Waypoints</div>
+                <div class="waypoint-list" id="waypointList">
+                    <p style="text-align: center; color: #999; font-size: 13px;">No waypoints yet</p>
+                </div>
+                
+                <div class="total-info" id="totalInfo" style="display: none;">
+                    <div class="total-row">
+                        <span class="total-label">Total Distance:</span>
+                        <span class="total-value" id="totalDistance">0 nm</span>
+                    </div>
+                    <div class="total-row">
+                        <span class="total-label">Number of Legs:</span>
+                        <span class="total-value" id="totalLegs">0</span>
+                    </div>
+                </div>
+                
+                <button class="export-btn" onclick="exportFlightPlan()">Export to Drift Calculator</button>
+                <button class="clear-all-btn" onclick="clearAllWaypoints()">Clear All Waypoints</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="common.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let waypoints = [];
+        let markers = [];
+        let polyline = null;
+        let windCache = {}; // Cache for wind data
+        
+        // Initialize departure time to current time
+        function initDepartureTime() {
+            const now = new Date();
+            const isoString = now.toISOString().slice(0, 16);
+            document.getElementById('departureTime').value = isoString;
+        }
+        
+        // Initialize map
+        function initMap() {
+            // Center on UK
+            map = L.map('planMap').setView([52.5, -1.5], 7);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 15,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add click handler
+            map.on('click', function(e) {
+                addWaypoint(e.latlng.lat, e.latlng.lng);
+            });
+        }
+        
+        // Add waypoint
+        function addWaypoint(lat, lng) {
+            const waypoint = {
+                id: Date.now(),
+                name: `WP${waypoints.length + 1}`,
+                lat: lat,
+                lng: lng,
+                altitude: 2000 // Default altitude
+            };
+            
+            waypoints.push(waypoint);
+            
+            // Add marker
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'waypoint-marker-wrapper',
+                    html: `<div class="waypoint-marker"></div>
+                           <div class="waypoint-label">${waypoint.name}</div>`,
+                    iconSize: [12, 12],
+                    iconAnchor: [6, 6]
+                })
+            }).addTo(map);
+            
+            markers.push(marker);
+            
+            // Update display
+            updateWaypointList();
+            updatePolyline();
+        }
+        
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 3440.065; // Earth radius in nautical miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Calculate track (bearing) between two points
+        function calculateTrack(lat1, lng1, lat2, lng2) {
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const lat1Rad = lat1 * Math.PI / 180;
+            const lat2Rad = lat2 * Math.PI / 180;
+            
+            const x = Math.sin(dLng) * Math.cos(lat2Rad);
+            const y = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
+                     Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+            
+            let track = Math.atan2(x, y) * 180 / Math.PI;
+            return (track + 360) % 360;
+        }
+        
+        // Fetch wind data for a specific point
+        async function fetchWindData(lat, lng, altitude) {
+            // Calculate hours from now for the departure time
+            const departureTimeInput = document.getElementById('departureTime').value;
+            if (!departureTimeInput) {
+                return { speed: 0, direction: 0 };
+            }
+            
+            const departureTime = new Date(departureTimeInput);
+            const now = new Date();
+            const hoursFromNow = Math.max(0, Math.floor((departureTime - now) / 3600000));
+            
+            // Create cache key
+            const cacheKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${altitude}_${hoursFromNow}`;
+            if (windCache[cacheKey]) {
+                return windCache[cacheKey];
+            }
+            
+            try {
+                // Build parameters - always include 10m wind and add pressure levels based on altitude
+                let params = 'wind_speed_10m,wind_direction_10m';
+                
+                // Add pressure levels for higher altitudes
+                if (altitude >= 1000) {
+                    // Add the commonly available pressure levels
+                    params += ',windspeed_1000hPa,winddirection_1000hPa';
+                    params += ',windspeed_925hPa,winddirection_925hPa';
+                    params += ',windspeed_850hPa,winddirection_850hPa';
+                    params += ',windspeed_700hPa,winddirection_700hPa';
+                }
+                
+                // Use Open-Meteo API to get wind data
+                const url = `https://api.open-meteo.com/v1/forecast?` +
+                    `latitude=${lat}&` +
+                    `longitude=${lng}&` +
+                    `hourly=${params}&` +
+                    `forecast_days=2&` +
+                    `wind_speed_unit=kn`;
+                
+                console.log('Fetching wind for:', lat.toFixed(2), lng.toFixed(2), 'alt:', altitude, 'hour offset:', hoursFromNow);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.hourly) {
+                    let windSpeed, windDirection;
+                    
+                    // Select appropriate wind data based on altitude
+                    if (altitude < 1000) {
+                        windSpeed = data.hourly.wind_speed_10m?.[hoursFromNow] || 0;
+                        windDirection = data.hourly.wind_direction_10m?.[hoursFromNow] || 0;
+                    } else if (altitude < 3000) {
+                        // Use 1000hPa or 925hPa
+                        windSpeed = data.hourly.windspeed_1000hPa?.[hoursFromNow] || 
+                                   data.hourly.windspeed_925hPa?.[hoursFromNow] || 
+                                   data.hourly.wind_speed_10m?.[hoursFromNow] || 0;
+                        windDirection = data.hourly.winddirection_1000hPa?.[hoursFromNow] || 
+                                       data.hourly.winddirection_925hPa?.[hoursFromNow] || 
+                                       data.hourly.wind_direction_10m?.[hoursFromNow] || 0;
+                    } else if (altitude < 6000) {
+                        // Use 925hPa or 850hPa
+                        windSpeed = data.hourly.windspeed_925hPa?.[hoursFromNow] || 
+                                   data.hourly.windspeed_850hPa?.[hoursFromNow] || 
+                                   data.hourly.wind_speed_10m?.[hoursFromNow] || 0;
+                        windDirection = data.hourly.winddirection_925hPa?.[hoursFromNow] || 
+                                       data.hourly.winddirection_850hPa?.[hoursFromNow] || 
+                                       data.hourly.wind_direction_10m?.[hoursFromNow] || 0;
+                    } else {
+                        // Use 850hPa or 700hPa for higher altitudes
+                        windSpeed = data.hourly.windspeed_850hPa?.[hoursFromNow] || 
+                                   data.hourly.windspeed_700hPa?.[hoursFromNow] || 
+                                   data.hourly.wind_speed_10m?.[hoursFromNow] || 0;
+                        windDirection = data.hourly.winddirection_850hPa?.[hoursFromNow] || 
+                                       data.hourly.winddirection_700hPa?.[hoursFromNow] || 
+                                       data.hourly.wind_direction_10m?.[hoursFromNow] || 0;
+                    }
+                    
+                    const windData = {
+                        speed: Math.round(windSpeed),
+                        direction: Math.round(windDirection)
+                    };
+                    
+                    console.log('Wind data:', windData);
+                    windCache[cacheKey] = windData;
+                    return windData;
+                }
+            } catch (error) {
+                console.error('Error fetching wind data:', error);
+            }
+            
+            return { speed: 0, direction: 0 };
+        }
+        
+        // Update altitude for a waypoint
+        function updateAltitude(waypointId, altitude) {
+            const waypoint = waypoints.find(wp => wp.id === waypointId);
+            if (waypoint) {
+                waypoint.altitude = parseInt(altitude);
+                updateWaypointList(); // Refresh to get new wind data
+            }
+        }
+        
+        // Update waypoint list display
+        async function updateWaypointList() {
+            const listDiv = document.getElementById('waypointList');
+            
+            if (waypoints.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #999; font-size: 13px;">No waypoints yet</p>';
+                document.getElementById('totalInfo').style.display = 'none';
+                return;
+            }
+            
+            let html = '';
+            let totalDistance = 0;
+            
+            for (let index = 0; index < waypoints.length; index++) {
+                const wp = waypoints[index];
+                html += `
+                    <div class="waypoint-item">
+                        <div class="waypoint-header">
+                            <span class="waypoint-name">${wp.name}</span>
+                            <button class="delete-waypoint" onclick="deleteWaypoint(${wp.id})">Delete</button>
+                        </div>
+                        <div class="waypoint-coords">
+                            ${wp.lat.toFixed(4)}°, ${wp.lng.toFixed(4)}°
+                        </div>
+                `;
+                
+                // Add leg info if not the first waypoint
+                if (index > 0) {
+                    const prevWp = waypoints[index - 1];
+                    const distance = calculateDistance(prevWp.lat, prevWp.lng, wp.lat, wp.lng);
+                    const track = calculateTrack(prevWp.lat, prevWp.lng, wp.lat, wp.lng);
+                    totalDistance += distance;
+                    
+                    // Calculate midpoint for wind
+                    const midLat = (prevWp.lat + wp.lat) / 2;
+                    const midLng = (prevWp.lng + wp.lng) / 2;
+                    
+                    html += `
+                        <div class="leg-info">
+                            <div class="leg-row">
+                                <span class="leg-label">From:</span>
+                                <span class="leg-value">${prevWp.name}</span>
+                            </div>
+                            <div class="leg-row">
+                                <span class="leg-label">Distance:</span>
+                                <span class="leg-value">${distance.toFixed(1)} nm</span>
+                            </div>
+                            <div class="leg-row">
+                                <span class="leg-label">Track:</span>
+                                <span class="leg-value">${track.toFixed(0)}°T</span>
+                            </div>
+                            <div class="leg-row">
+                                <span class="leg-label">Altitude:</span>
+                                <input type="number" class="altitude-input" 
+                                       value="${wp.altitude}" 
+                                       min="0" max="15000" step="500"
+                                       onchange="updateAltitude(${wp.id}, this.value)">
+                                <span style="font-size: 11px; margin-left: 3px;">ft</span>
+                            </div>
+                            <div class="wind-info" id="wind-${wp.id}">
+                                <div class="wind-loading">Loading wind...</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Fetch wind data asynchronously
+                    fetchWindData(midLat, midLng, wp.altitude).then(windData => {
+                        const windDiv = document.getElementById(`wind-${wp.id}`);
+                        if (windDiv) {
+                            windDiv.innerHTML = `
+                                <strong>Wind at midpoint:</strong> ${windData.speed}kt from ${windData.direction}°<br>
+                                <span style="color: #666;">Altitude: ${wp.altitude}ft</span>
+                            `;
+                        }
+                    });
+                }
+                
+                html += '</div>';
+            }
+            
+            listDiv.innerHTML = html;
+            
+            // Update totals
+            if (waypoints.length > 1) {
+                document.getElementById('totalDistance').textContent = totalDistance.toFixed(1) + ' nm';
+                document.getElementById('totalLegs').textContent = waypoints.length - 1;
+                document.getElementById('totalInfo').style.display = 'block';
+            } else {
+                document.getElementById('totalInfo').style.display = 'none';
+            }
+        }
+        
+        // Update polyline on map
+        function updatePolyline() {
+            // Remove existing polyline
+            if (polyline) {
+                map.removeLayer(polyline);
+            }
+            
+            if (waypoints.length > 1) {
+                const latlngs = waypoints.map(wp => [wp.lat, wp.lng]);
+                polyline = L.polyline(latlngs, {
+                    color: '#007bff',
+                    weight: 2,
+                    opacity: 0.8,
+                    dashArray: '10, 5'
+                }).addTo(map);
+            }
+        }
+        
+        // Delete waypoint
+        function deleteWaypoint(id) {
+            const index = waypoints.findIndex(wp => wp.id === id);
+            if (index !== -1) {
+                // Remove marker
+                map.removeLayer(markers[index]);
+                markers.splice(index, 1);
+                
+                // Remove waypoint
+                waypoints.splice(index, 1);
+                
+                // Rename remaining waypoints
+                waypoints.forEach((wp, i) => {
+                    wp.name = `WP${i + 1}`;
+                });
+                
+                // Rebuild markers with new names
+                markers.forEach(marker => map.removeLayer(marker));
+                markers = [];
+                
+                waypoints.forEach(wp => {
+                    const marker = L.marker([wp.lat, wp.lng], {
+                        icon: L.divIcon({
+                            className: 'waypoint-marker-wrapper',
+                            html: `<div class="waypoint-marker"></div>
+                                   <div class="waypoint-label">${wp.name}</div>`,
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        })
+                    }).addTo(map);
+                    markers.push(marker);
+                });
+                
+                // Update display
+                updateWaypointList();
+                updatePolyline();
+            }
+        }
+        
+        // Clear all waypoints
+        function clearAllWaypoints() {
+            // Remove all markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // Remove polyline
+            if (polyline) {
+                map.removeLayer(polyline);
+                polyline = null;
+            }
+            
+            // Clear waypoints
+            waypoints = [];
+            
+            // Update display
+            updateWaypointList();
+        }
+        
+        // Export to drift calculator
+        async function exportFlightPlan() {
+            if (waypoints.length < 2) {
+                alert('Please add at least 2 waypoints to create a flight plan');
+                return;
+            }
+            
+            // Prepare flight plan data with wind
+            const legs = [];
+            
+            for (let index = 1; index < waypoints.length; index++) {
+                const wp = waypoints[index];
+                const prevWp = waypoints[index - 1];
+                
+                // Calculate midpoint for wind
+                const midLat = (prevWp.lat + wp.lat) / 2;
+                const midLng = (prevWp.lng + wp.lng) / 2;
+                
+                // Fetch wind for this leg
+                const windData = await fetchWindData(midLat, midLng, wp.altitude);
+                
+                legs.push({
+                    from: prevWp.name,
+                    to: wp.name,
+                    distance: calculateDistance(prevWp.lat, prevWp.lng, wp.lat, wp.lng),
+                    track: calculateTrack(prevWp.lat, prevWp.lng, wp.lat, wp.lng),
+                    altitude: wp.altitude,
+                    wind: windData,
+                    fromCoords: { lat: prevWp.lat, lng: prevWp.lng },
+                    toCoords: { lat: wp.lat, lng: wp.lng }
+                });
+            }
+            
+            const flightPlanData = {
+                departureTime: document.getElementById('departureTime').value,
+                legs: legs
+            };
+            
+            // Store in localStorage
+            localStorage.setItem('flightPlanData', JSON.stringify(flightPlanData));
+            
+            // Navigate to drift calculator
+            window.location.href = 'index.html?mode=flightplan';
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCommon();
+            initMap();
+            initDepartureTime();
+            
+            // Add departure time change listener
+            document.getElementById('departureTime').addEventListener('change', function() {
+                windCache = {}; // Clear cache when time changes
+                updateWaypointList(); // Refresh wind data
+            });
+        });
+    </script>
+</body>
+</html>
