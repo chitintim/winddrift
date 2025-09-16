@@ -45,6 +45,8 @@ function setActiveNav() {
             link.classList.add('active');
         } else if (currentPath === 'weather.html' && href === 'weather.html') {
             link.classList.add('active');
+        } else if (currentPath === 'spotwind.html' && href === 'spotwind.html') {
+            link.classList.add('active');
         }
     });
 }

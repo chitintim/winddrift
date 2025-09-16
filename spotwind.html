@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Drift Calculator - Spot Wind</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Page-specific styles */
+        #windMap {
+            height: 500px;
+            border-radius: 8px;
+            position: relative;
+            cursor: crosshair;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .crosshair-lines {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            top: -20px;
+            left: -20px;
+        }
+        
+        .crosshair-h {
+            position: absolute;
+            width: 40px;
+            height: 2px;
+            background: rgba(255, 0, 0, 0.7);
+            top: 19px;
+        }
+        
+        .crosshair-v {
+            position: absolute;
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 0, 0, 0.7);
+            left: 19px;
+        }
+        
+        .spot-info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .altitude-controls {
+            margin-bottom: 15px;
+        }
+        
+        .altitude-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .altitude-presets {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .preset-btn {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .preset-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .altitude-display {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        .wind-arrow {
+            stroke: #333;
+            fill: none;
+            stroke-width: 2;
+        }
+        
+        .wind-arrow.light {
+            stroke: #22c55e;
+        }
+        
+        .wind-arrow.moderate {
+            stroke: #eab308;
+        }
+        
+        .wind-arrow.strong {
+            stroke: #ef4444;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            border-radius: 8px;
+        }
+        
+        .forecast-time {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Drift Calculator</h1>
+        <p class="subtitle">Spot Wind Visualization</p>
+        <div class="time-display">
+            <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
+            <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
+        </div>
+        
+        <div class="tabs">
+            <a href="index.html" class="tab">Drift Calc</a>
+            <a href="windstar.html" class="tab">Wind Star</a>
+            <a href="weather.html" class="tab">Weather</a>
+            <a href="spotwind.html" class="tab">Spot Wind</a>
+        </div>
+        
+        <div class="altitude-controls">
+            <div class="altitude-display">
+                Altitude: <span id="altitudeValue">2000</span> ft MSL
+            </div>
+            <input type="range" class="altitude-slider" id="altitudeSlider" 
+                   min="0" max="10000" step="500" value="2000">
+            <div class="altitude-presets">
+                <button class="preset-btn" data-alt="0">Surface</button>
+                <button class="preset-btn active" data-alt="2000">2000ft</button>
+                <button class="preset-btn" data-alt="3000">3000ft</button>
+                <button class="preset-btn" data-alt="5000">5000ft</button>
+                <button class="preset-btn" data-alt="7500">7500ft</button>
+                <button class="preset-btn" data-alt="10000">FL100</button>
+            </div>
+        </div>
+        
+        <div class="forecast-time" id="forecastTime">Loading forecast data...</div>
+        
+        <div style="position: relative;">
+            <div id="windMap"></div>
+            <div class="crosshair">
+                <div class="crosshair-lines">
+                    <div class="crosshair-h"></div>
+                    <div class="crosshair-v"></div>
+                </div>
+            </div>
+            <div class="spot-info" id="spotInfo">
+                Wind: --- @ ---°
+            </div>
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div>Loading wind data...</div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #22c55e;"></div>
+                <span>&lt;15kt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #eab308;"></div>
+                <span>15-25kt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ef4444;"></div>
+                <span>&gt;25kt</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="common.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let windDataCache = {};
+        let currentAltitude = 2000;
+        let windMarkers = [];
+        let currentBounds = null;
+        let loadDebounceTimer = null;
+        
+        // Map altitude to pressure level
+        function altitudeToPressure(altFt) {
+            // Approximate pressure levels for altitudes
+            if (altFt <= 500) return { level: '1000hPa', desc: '~300ft' };
+            if (altFt <= 1500) return { level: '975hPa', desc: '~1000ft' };
+            if (altFt <= 2200) return { level: '950hPa', desc: '~1800ft' };
+            if (altFt <= 3000) return { level: '925hPa', desc: '~2500ft' };
+            if (altFt <= 4000) return { level: '900hPa', desc: '~3300ft' };
+            if (altFt <= 5500) return { level: '850hPa', desc: '~5000ft' };
+            if (altFt <= 7000) return { level: '800hPa', desc: '~6500ft' };
+            return { level: '700hPa', desc: '~10000ft' };
+        }
+        
+        // Generate grid points
+        function generateGrid(bounds, spacing = 0.25) {
+            const points = [];
+            const latStep = spacing;
+            const lonStep = spacing;
+            
+            for (let lat = bounds.south; lat <= bounds.north; lat += latStep) {
+                for (let lon = bounds.west; lon <= bounds.east; lon += lonStep) {
+                    points.push({ lat: lat.toFixed(2), lon: lon.toFixed(2) });
+                }
+            }
+            return points;
+        }
+        
+        // Create wind arrow SVG
+        function createWindArrow(speed, direction) {
+            const length = Math.min(30, Math.max(10, speed * 1.5));
+            let colorClass = 'light';
+            if (speed >= 15 && speed < 25) colorClass = 'moderate';
+            if (speed >= 25) colorClass = 'strong';
+            
+            // Wind direction is FROM, so rotate 180 degrees for display
+            const rotation = direction + 180;
+            
+            const svg = `
+                <svg width="50" height="50" viewBox="-25 -25 50 50" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="rotate(${rotation})">
+                        <line x1="0" y1="0" x2="0" y2="${-length}" 
+                              class="wind-arrow ${colorClass}" />
+                        <path d="M -4,${-length + 5} L 0,${-length} L 4,${-length + 5}" 
+                              class="wind-arrow ${colorClass}" fill="${colorClass === 'light' ? '#22c55e' : colorClass === 'moderate' ? '#eab308' : '#ef4444'}" />
+                    </g>
+                    <text x="0" y="20" text-anchor="middle" font-size="11" font-weight="600">${Math.round(speed)}kt</text>
+                </svg>
+            `;
+            
+            return svg;
+        }
+        
+        // Load wind data from Open-Meteo
+        async function loadWindData(bounds) {
+            const pressure = altitudeToPressure(currentAltitude);
+            const points = generateGrid(bounds);
+            
+            // Build cache key
+            const hour = new Date().getUTCHours();
+            const cacheKey = `${currentAltitude}_${bounds.north}_${bounds.south}_${bounds.west}_${bounds.east}_${hour}`;
+            
+            // Check cache
+            if (windDataCache[cacheKey]) {
+                return windDataCache[cacheKey];
+            }
+            
+            // Prepare API call
+            const lats = points.map(p => p.lat).join(',');
+            const lons = points.map(p => p.lon).join(',');
+            
+            const windSpeedParam = `windspeed_${pressure.level.replace('hPa', 'hPa')}`;
+            const windDirParam = `winddirection_${pressure.level.replace('hPa', 'hPa')}`;
+            
+            const url = `https://api.open-meteo.com/v1/forecast?` +
+                `latitude=${lats}&` +
+                `longitude=${lons}&` +
+                `hourly=${windSpeedParam},${windDirParam}&` +
+                `forecast_days=1&` +
+                `wind_speed_unit=kn`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Process data
+                const processedData = [];
+                const currentHour = hour;
+                
+                // Handle both single location and array responses
+                const isArray = Array.isArray(data.latitude);
+                const count = isArray ? data.latitude.length : 1;
+                
+                for (let i = 0; i < count; i++) {
+                    const lat = isArray ? data.latitude[i] : data.latitude;
+                    const lon = isArray ? data.longitude[i] : data.longitude;
+                    const speeds = isArray ? data.hourly[windSpeedParam][i] : data.hourly[windSpeedParam];
+                    const directions = isArray ? data.hourly[windDirParam][i] : data.hourly[windDirParam];
+                    
+                    // Get current hour data
+                    const speed = Array.isArray(speeds) ? speeds[currentHour] : speeds;
+                    const direction = Array.isArray(directions) ? directions[currentHour] : directions;
+                    
+                    if (speed !== null && direction !== null) {
+                        processedData.push({
+                            lat: lat,
+                            lon: lon,
+                            speed: speed,
+                            direction: direction
+                        });
+                    }
+                }
+                
+                // Cache result
+                windDataCache[cacheKey] = processedData;
+                
+                // Update forecast time
+                const forecastTime = new Date();
+                forecastTime.setUTCHours(currentHour, 0, 0, 0);
+                document.getElementById('forecastTime').textContent = 
+                    `Forecast for: ${forecastTime.toUTCString().replace('GMT', 'UTC')}`;
+                
+                return processedData;
+                
+            } catch (error) {
+                console.error('Error loading wind data:', error);
+                document.getElementById('forecastTime').textContent = 'Error loading forecast data';
+                return [];
+            }
+        }
+        
+        // Update wind display
+        async function updateWindDisplay() {
+            if (!currentBounds) return;
+            
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            // Clear existing markers
+            windMarkers.forEach(marker => map.removeLayer(marker));
+            windMarkers = [];
+            
+            // Load data
+            const windData = await loadWindData(currentBounds);
+            
+            // Add markers
+            windData.forEach(point => {
+                const icon = L.divIcon({
+                    html: createWindArrow(point.speed, point.direction),
+                    className: 'wind-marker',
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 25]
+                });
+                
+                const marker = L.marker([point.lat, point.lon], { icon })
+                    .addTo(map);
+                windMarkers.push(marker);
+            });
+            
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+            // Update crosshair wind
+            updateCrosshairWind(windData);
+        }
+        
+        // Bilinear interpolation for crosshair
+        function updateCrosshairWind(windData) {
+            const center = map.getCenter();
+            
+            if (windData.length === 0) {
+                document.getElementById('spotInfo').textContent = 'No data';
+                return;
+            }
+            
+            // Find 4 nearest points
+            const distances = windData.map(point => ({
+                ...point,
+                distance: Math.sqrt(
+                    Math.pow(point.lat - center.lat, 2) + 
+                    Math.pow(point.lon - center.lng, 2)
+                )
+            }));
+            
+            distances.sort((a, b) => a.distance - b.distance);
+            const nearest = distances.slice(0, 4);
+            
+            if (nearest.length === 0) {
+                document.getElementById('spotInfo').textContent = 'No data';
+                return;
+            }
+            
+            // Weighted average
+            const weights = nearest.map(p => 1 / (p.distance + 0.001));
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            
+            // Convert to components
+            let u = 0, v = 0;
+            nearest.forEach((point, i) => {
+                const weight = weights[i] / totalWeight;
+                u += point.speed * Math.sin(point.direction * Math.PI / 180) * weight;
+                v += point.speed * Math.cos(point.direction * Math.PI / 180) * weight;
+            });
+            
+            // Convert back to speed and direction
+            const speed = Math.sqrt(u * u + v * v);
+            let direction = Math.atan2(u, v) * 180 / Math.PI;
+            if (direction < 0) direction += 360;
+            
+            document.getElementById('spotInfo').innerHTML = 
+                `Wind: ${Math.round(speed)}kt @ ${Math.round(direction)}°`;
+        }
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('windMap').setView([51.3, -0.5], 8);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 11,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Set initial bounds
+            updateBounds();
+            
+            // Load initial data
+            updateWindDisplay();
+            
+            // Update on map move
+            map.on('moveend', () => {
+                clearTimeout(loadDebounceTimer);
+                loadDebounceTimer = setTimeout(() => {
+                    updateBounds();
+                    updateWindDisplay();
+                }, 500);
+            });
+            
+            // Update crosshair on move
+            map.on('move', () => {
+                if (windMarkers.length > 0) {
+                    const windData = windDataCache[Object.keys(windDataCache)[0]];
+                    if (windData) updateCrosshairWind(windData);
+                }
+            });
+        }
+        
+        // Update bounds
+        function updateBounds() {
+            const bounds = map.getBounds();
+            currentBounds = {
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                west: bounds.getWest(),
+                east: bounds.getEast()
+            };
+        }
+        
+        // Altitude controls
+        document.getElementById('altitudeSlider').addEventListener('input', function(e) {
+            currentAltitude = parseInt(e.target.value);
+            document.getElementById('altitudeValue').textContent = currentAltitude;
+            
+            // Update preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.alt) === currentAltitude);
+            });
+            
+            // Reload wind data
+            updateWindDisplay();
+        });
+        
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const alt = parseInt(this.dataset.alt);
+                currentAltitude = alt;
+                document.getElementById('altitudeSlider').value = alt;
+                document.getElementById('altitudeValue').textContent = alt;
+                
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                updateWindDisplay();
+            });
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCommon();
+            initMap();
+        });
+    </script>
+</body>
+</html>

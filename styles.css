@@ -63,7 +63,7 @@ h1 {
 /* Navigation Tabs */
 .tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 5px;
     margin-bottom: 15px;
 }
@@ -243,7 +243,7 @@ button:active {
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .tabs {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -261,11 +261,11 @@ button:active {
     }
     
     .tabs {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .tab {
-        font-size: 13px;
-        padding: 8px 5px;
+        font-size: 12px;
+        padding: 8px 4px;
     }
 }

@@ -7,10 +7,13 @@ A mobile-friendly wind drift calculator for UK Private Pilot License (PPL) navig
 
 ```
 winddrift/
-├── index.html           # Main calculator page (3 tabs)
-├── weather.html         # Weather display page
+├── index.html           # Drift calculator (multi-leg flight planning)
+├── windstar.html        # Wind star (8-point reference)
+├── weather.html         # Weather display (METAR/TAF)
+├── spotwind.html        # Spot wind visualization (coming soon)
 ├── styles.css           # Shared CSS styles
 ├── common.js            # Shared JavaScript functions
+├── .gitignore          # Git ignore file
 └── DOCUMENTATION.md     # This file
 ```
 
@@ -36,37 +39,28 @@ Shared JavaScript functionality:
 - `calculateWindTriangle()` - Core wind triangle mathematics
 - `toRadians()`, `toDegrees()`, `normalizeHeading()` - Utility functions
 
+### Recent Updates (September 2025)
+
+1. **Restructured to 3 separate pages** - Each page now has single focus
+2. **Fixed TAF visibility parsing** - No longer confuses wind direction with visibility
+3. **Added day separation to TAF** - Groups periods by day with "Today/Tomorrow" labels
+4. **Improved navigation** - Active page highlighting, 3-column mobile layout
+5. **Added flight status indicators** - Colored dots on airport quick access buttons
+6. **Fixed mobile styling** - Better button visibility, consistent navigation
+
 ### Pages
 
-## index.html - Main Calculator
+## index.html - Drift Calculator
 
 ### Functions
 
-#### Calculator Tab
-**Purpose**: Calculate heading and ground speed for a single leg
+**Purpose**: Multi-leg flight planning with cumulative time/distance
 
 **calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed)**
 - Calculates wind correction angle using trigonometry
 - Returns true/magnetic heading, ground speed, wind components
 - Formula: WCA = arcsin(crosswind/TAS)
 
-**performCalculation()**
-- Gets input values from form
-- Calls calculateWindTriangle()
-- Updates UI with results
-- Shows heading, ground speed, WCA, wind components
-
-#### Wind Star Tab
-**Purpose**: Show wind corrections for 8 compass directions (useful for diversions)
-
-**generateWindStar()**
-- Calculates wind effects for N, NE, E, SE, S, SW, W, NW
-- Displays in compass rose layout
-- Shows ground speed and WCA for each direction
-- Identifies best/worst ground speeds
-
-#### Drift Calculator Tab (formerly Flight Plan)
-**Purpose**: Calculate multiple legs with cumulative time/distance
 
 **calculateLeg(row)**
 - Calculates heading/GS for individual leg
@@ -86,6 +80,16 @@ Shared JavaScript functionality:
 - TAS (kt) - True airspeed, defaults to 98kt (PA28 Warrior II)
 - Magnetic Variation (°) - Default -0.5° (White Waltham 2025)
 
+## windstar.html - Wind Star
+
+### Functions
+
+**generateWindStar()**
+- Calculates wind effects for 8 cardinal directions
+- Displays in 3x3 grid (compass rose layout)
+- Shows ground speed and WCA for each direction
+- Identifies best/worst ground speeds for diversions
+
 ## weather.html - Weather Display
 
 ### Map Display
@@ -103,6 +107,10 @@ Shared JavaScript functionality:
 **updateMarker(icao)**
 - Updates individual marker color
 - Colors: Green (VFR), Blue (MVFR), Red (IFR), Purple (LIFR), Grey (No data)
+
+**updateQuickAccessButtons()**
+- Adds status dots to airport buttons
+- Updates dynamically as weather loads
 
 ### Flight Category Logic
 **getFlightCategory(ceiling, visibility)**
@@ -130,6 +138,9 @@ Decodes:
 ### TAF Decoding
 **decodeTaf(taf)**
 Parses TAF sections:
+- Groups periods by day with visual separation
+- Adds "Today/Tomorrow" labels
+- Sorts periods chronologically within each day
 - Base forecast
 - TEMPO (temporary changes)
 - BECMG (becoming)
@@ -211,6 +222,16 @@ Time (minutes) = Distance (nm) / Ground Speed (kt) × 60
 - Magnetic Variation: -0.5° (White Waltham 2025)
 - Map center: 51.3°N, 0.5°W (Southern England)
 
+## Upcoming Features
+
+### Spot Wind Visualization (spotwind.html)
+- Grid overlay showing wind arrows on map
+- Altitude slider (0-10,000ft)
+- Crosshair with interpolated wind at center
+- Uses Open-Meteo API (no key required)
+- Color-coded wind speeds
+- Pre-loading for smooth transitions
+
 ## Future Extension Points
 The modular structure allows easy addition of:
 - New pages (add HTML file, link in navigation)
@@ -218,3 +239,4 @@ The modular structure allows easy addition of:
 - New weather features (extend decode functions)
 - Different aircraft defaults (modify form defaults)
 - Additional calculations (extend common.js)
+- Weather overlays and visualizations
