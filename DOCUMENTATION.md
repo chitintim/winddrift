@@ -7,13 +7,15 @@ A mobile-friendly wind drift calculator for UK Private Pilot License (PPL) navig
 
 ```
 winddrift/
-├── index.html           # Drift calculator (multi-leg flight planning)
+├── index.html           # Drift calculator (per-leg wind support)
 ├── windstar.html        # Wind star (8-point reference)
 ├── weather.html         # Weather display (METAR/TAF)
-├── spotwind.html        # Spot wind visualization (coming soon)
+├── spotwind.html        # Spot wind visualization
+├── flightplan.html      # Interactive flight plan map
 ├── styles.css           # Shared CSS styles
-├── common.js            # Shared JavaScript functions
+├── common.js            # Shared functions and navigation
 ├── .gitignore          # Git ignore file
+├── README.md           # Project readme
 └── DOCUMENTATION.md     # This file
 ```
 
@@ -34,19 +36,27 @@ Common styling for both pages including:
 #### common.js
 Shared JavaScript functionality:
 - `updateClock()` - Updates Zulu and UK local time displays
-- `setActiveNav(pageName)` - Handles navigation highlighting
-- `initializeCommon()` - Initializes clock and navigation
+- `generateNavigation()` - Creates standardized navigation HTML
+- `setActiveNav()` - Handles navigation highlighting (all 5 pages)
+- `initializeCommon()` - Initializes navigation, clock, and active tabs
 - `calculateWindTriangle()` - Core wind triangle mathematics
 - `toRadians()`, `toDegrees()`, `normalizeHeading()` - Utility functions
 
 ### Recent Updates (September 2025)
 
-1. **Restructured to 3 separate pages** - Each page now has single focus
-2. **Fixed TAF visibility parsing** - No longer confuses wind direction with visibility
-3. **Added day separation to TAF** - Groups periods by day with "Today/Tomorrow" labels
-4. **Improved navigation** - Active page highlighting, 3-column mobile layout
-5. **Added flight status indicators** - Colored dots on airport quick access buttons
-6. **Fixed mobile styling** - Better button visibility, consistent navigation
+#### Major Features Added:
+1. **Interactive Flight Plan Map** - Click-to-add waypoints with automatic wind fetching
+2. **Per-Leg Wind Support** - Individual wind inputs for each leg in drift calculator
+3. **Master Wind Cascading** - New legs automatically inherit master wind values
+4. **Flight Plan Integration** - Seamless export from map to drift calculator
+5. **Standardized Navigation** - Dynamic navigation generation across all 5 pages
+
+#### Technical Improvements:
+6. **Altitude-Based Wind Data** - Pressure level interpolation for accurate winds
+7. **Enhanced Spot Wind** - Real-time wind visualization with altitude/time controls
+8. **Fixed TAF visibility parsing** - No longer confuses wind direction with visibility
+9. **Added day separation to TAF** - Groups periods by day with "Today/Tomorrow" labels
+10. **Improved mobile styling** - Better button visibility, consistent navigation
 
 ### Pages
 
@@ -54,31 +64,53 @@ Shared JavaScript functionality:
 
 ### Functions
 
-**Purpose**: Multi-leg flight planning with cumulative time/distance
-
-**calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed)**
-- Calculates wind correction angle using trigonometry
-- Returns true/magnetic heading, ground speed, wind components
-- Formula: WCA = arcsin(crosswind/TAS)
-
+**Purpose**: Multi-leg flight planning with per-leg wind data and cumulative time/distance
 
 **calculateLeg(row)**
-- Calculates heading/GS for individual leg
+- Calculates heading/GS for individual leg using leg-specific wind data
+- Uses individual wind inputs from each table row
 - Updates row with magnetic heading, ground speed, time
 
 **addLeg()**
 - Adds new row to flight plan table
-- Attaches event listeners for dynamic updates
+- Automatically copies master wind values to new leg
+- Attaches event listeners for dynamic updates on all inputs
+
+**removeLeg(button)**
+- Removes selected leg from flight plan
+- Renumbers remaining legs automatically
+- Updates totals after removal
+
+**copyMasterWindToAllLegs()**
+- Propagates master wind changes to all existing legs
+- Triggered when master wind inputs are modified
+- Allows bulk updates while preserving individual overrides
+
+**importFlightPlan()**
+- Imports flight plan data from localStorage
+- Populates all leg data including winds from flight plan map
+- Automatically triggered with ?import=flightplan URL parameter
 
 **updateTotals()**
 - Sums total distance and time across all legs
 
 ### Input Fields
-- Wind Direction (°) - Direction wind is FROM
-- Wind Speed (kt)
-- True Course (°) - Desired track over ground
+#### Master Inputs (cascade to new legs):
+- Master Wind Direction (°) - Applied to new legs
+- Master Wind Speed (kt) - Update individual legs below
 - TAS (kt) - True airspeed, defaults to 98kt (PA28 Warrior II)
 - Magnetic Variation (°) - Default -0.5° (White Waltham 2025)
+
+#### Per-Leg Inputs:
+- Track (°T) - Desired track over ground
+- Distance (nm) - Leg distance
+- Wind Dir (°) - Individual leg wind direction
+- Wind Spd (kt) - Individual leg wind speed
+
+#### Outputs:
+- Hdg (°M) - Magnetic heading to steer
+- GS (kt) - Ground speed
+- Time (min) - Leg time
 
 ## windstar.html - Wind Star
 
@@ -222,15 +254,61 @@ Time (minutes) = Distance (nm) / Ground Speed (kt) × 60
 - Magnetic Variation: -0.5° (White Waltham 2025)
 - Map center: 51.3°N, 0.5°W (Southern England)
 
-## Upcoming Features
+## flightplan.html - Interactive Flight Plan Map
 
-### Spot Wind Visualization (spotwind.html)
-- Grid overlay showing wind arrows on map
-- Altitude slider (0-10,000ft)
-- Crosshair with interpolated wind at center
-- Uses Open-Meteo API (no key required)
-- Color-coded wind speeds
-- Pre-loading for smooth transitions
+### Functions
+
+**Purpose**: Visual flight planning with automatic wind data fetching
+
+**addWaypoint(lat, lng)**
+- Adds waypoint marker to map
+- Calculates distance and track from previous waypoint
+- Triggers automatic wind fetching for new leg
+
+**fetchWindData(lat, lng, altitude)**
+- Fetches wind data from Open-Meteo API
+- Uses pressure level interpolation based on altitude
+- Caches results to reduce API calls
+- Returns wind speed and direction
+
+**exportFlightPlan()**
+- Compiles all leg data including wind information
+- Stores in localStorage for import to drift calculator
+- Navigates to drift calculator with import parameter
+
+**updateAltitude(waypointId, altitude)**
+- Updates waypoint altitude and refetches wind data
+- Triggers recalculation of wind for affected leg
+
+### Input Fields
+- Departure Time - For accurate wind forecasts
+- Individual altitude inputs per waypoint (0-15,000ft)
+
+### Features
+- Click-to-add waypoints on interactive map
+- Automatic distance/track calculations using Haversine formula
+- Real-time wind fetching at leg midpoints
+- Visual waypoint management with delete capability
+- Export to drift calculator with all data intact
+
+## spotwind.html - Spot Wind Visualization
+
+### Functions
+
+**Purpose**: Real-time wind visualization with interactive controls
+
+**fetchSpotWindData()**
+- Fetches wind grid data from Open-Meteo API
+- Processes multiple pressure levels for altitude selection
+- Updates wind arrows and color coding
+
+**Features**
+- Interactive map with wind arrow overlay
+- Altitude slider (surface to 10,000ft / FL100)
+- Time slider for forecast winds (0-24 hours ahead)
+- Crosshair with interpolated wind at center point
+- Color-coded wind strength indicators
+- Bilinear interpolation for smooth wind transitions
 
 ## Future Extension Points
 The modular structure allows easy addition of:

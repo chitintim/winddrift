@@ -251,13 +251,7 @@
             <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
         </div>
         
-        <div class="tabs">
-            <a href="index.html" class="tab">Drift Calc</a>
-            <a href="windstar.html" class="tab">Wind Star</a>
-            <a href="weather.html" class="tab">Weather</a>
-            <a href="spotwind.html" class="tab">Spot Wind</a>
-            <a href="flightplan.html" class="tab">Flight Plan</a>
-        </div>
+        <div id="navigation-placeholder"></div>
         
         <div class="map-container">
             <div id="planMap"></div>
@@ -683,6 +677,8 @@
                     distance: calculateDistance(prevWp.lat, prevWp.lng, wp.lat, wp.lng),
                     track: calculateTrack(prevWp.lat, prevWp.lng, wp.lat, wp.lng),
                     altitude: wp.altitude,
+                    windDirection: windData.direction,
+                    windSpeed: windData.speed,
                     wind: windData,
                     fromCoords: { lat: prevWp.lat, lng: prevWp.lng },
                     toCoords: { lat: wp.lat, lng: wp.lng }
@@ -698,7 +694,7 @@
             localStorage.setItem('flightPlanData', JSON.stringify(flightPlanData));
             
             // Navigate to drift calculator
-            window.location.href = 'index.html?mode=flightplan';
+            window.location.href = 'index.html?import=flightplan';
         }
         
         // Initialize

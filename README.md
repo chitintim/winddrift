@@ -6,8 +6,10 @@ A comprehensive web-based aviation tool for UK PPL pilots, providing wind calcul
 
 ### 🧮 Drift Calculator
 - Calculate wind correction angles and ground speed
-- Single leg and multi-waypoint flight planning
-- Fuel consumption calculations
+- Multi-leg flight planning with individual wind data per leg
+- Master wind input that automatically cascades to new legs
+- Individual wind override capability for each leg
+- Import flight plans directly from Flight Plan Map
 - Real-time magnetic variation
 
 ### ⭐ Wind Star
@@ -61,9 +63,16 @@ Simply open `index.html` in a modern web browser. The application is fully clien
 
 ### Navigation
 - Use the tab buttons to switch between features
+- Standardized navigation across all pages (dynamically generated)
 - All times display in both Zulu (UTC) and UK local time
 - Mobile-responsive design with 3-column grid navigation on small screens
 - 5 main sections: Drift Calc, Wind Star, Weather, Spot Wind, Flight Plan
+
+### Flight Planning Workflow
+1. **Flight Plan Map**: Click to add waypoints, set altitudes, choose departure time
+2. **Automatic Wind Fetching**: Wind data retrieved for each leg midpoint
+3. **Export to Drift Calculator**: One-click transfer with all data intact
+4. **Per-Leg Wind Control**: Fine-tune individual leg winds in drift calculator
 
 ## Browser Requirements
 - Modern browser with ES6+ support
@@ -75,14 +84,21 @@ Simply open `index.html` in a modern web browser. The application is fully clien
 ### File Structure
 ```
 /
-├── index.html          # Drift calculator
+├── index.html          # Drift calculator with per-leg wind support
 ├── windstar.html       # Wind star display
 ├── weather.html        # Weather decoder
 ├── spotwind.html       # Spot wind visualization
-├── flightplan.html     # Flight plan map
-├── common.js           # Shared functions
+├── flightplan.html     # Interactive flight plan map
+├── common.js           # Shared functions and navigation
 └── styles.css          # Common styles
 ```
+
+### Recent Updates
+- **Per-Leg Wind Data**: Drift calculator now supports individual wind inputs for each leg
+- **Master Wind Cascading**: New legs automatically inherit master wind values
+- **Flight Plan Integration**: Seamless import from flight plan map to drift calculator
+- **Standardized Navigation**: Dynamic navigation generation from common.js
+- **Enhanced Wind Fetching**: Altitude-based wind data with pressure level interpolation
 
 ### API Integration
 - Weather data fetched via CORS proxy when needed

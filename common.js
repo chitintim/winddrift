@@ -47,12 +47,36 @@ function setActiveNav() {
             link.classList.add('active');
         } else if (currentPath === 'spotwind.html' && href === 'spotwind.html') {
             link.classList.add('active');
+        } else if (currentPath === 'flightplan.html' && href === 'flightplan.html') {
+            link.classList.add('active');
         }
     });
 }
 
+// Generate navigation HTML
+function generateNavigation() {
+    const navigation = `
+        <div class="tabs">
+            <a href="index.html" class="tab">Drift Calc</a>
+            <a href="windstar.html" class="tab">Wind Star</a>
+            <a href="weather.html" class="tab">Weather</a>
+            <a href="spotwind.html" class="tab">Spot Wind</a>
+            <a href="flightplan.html" class="tab">Flight Plan</a>
+        </div>
+    `;
+    
+    // Find the navigation placeholder and replace it
+    const navPlaceholder = document.getElementById('navigation-placeholder');
+    if (navPlaceholder) {
+        navPlaceholder.innerHTML = navigation;
+    }
+}
+
 // Initialize common functionality
 function initializeCommon() {
+    // Generate navigation
+    generateNavigation();
+    
     // Start clock
     updateClock();
     setInterval(updateClock, 1000);

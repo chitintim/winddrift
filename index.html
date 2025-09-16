@@ -101,27 +101,23 @@
             <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
         </div>
         
-        <div class="tabs">
-            <a href="index.html" class="tab">Drift Calc</a>
-            <a href="windstar.html" class="tab">Wind Star</a>
-            <a href="weather.html" class="tab">Weather</a>
-            <a href="spotwind.html" class="tab">Spot Wind</a>
-            <a href="flightplan.html" class="tab">Flight Plan</a>
-        </div>
+        <div id="navigation-placeholder"></div>
         
         <div class="tab-content active">
             <form id="flightPlanForm">
-                <div class="section-title">Wind & Aircraft Setup</div>
+                <div class="section-title">Master Wind & Aircraft Setup</div>
                 
                 <div class="input-row">
                     <div class="input-group">
-                        <label for="fpWindDirection">Wind Dir (°)</label>
+                        <label for="fpWindDirection">Master Wind Dir (°)</label>
                         <input type="number" id="fpWindDirection" min="0" max="360" step="1" required>
+                        <div class="helper-text">Applied to new legs</div>
                     </div>
                     
                     <div class="input-group">
-                        <label for="fpWindSpeed">Wind Speed (kt)</label>
+                        <label for="fpWindSpeed">Master Wind Speed (kt)</label>
                         <input type="number" id="fpWindSpeed" min="0" max="200" step="1" required>
+                        <div class="helper-text">Update individual legs below</div>
                     </div>
                 </div>
                 
@@ -144,9 +140,12 @@
                             <th>Leg</th>
                             <th>Track (°T)</th>
                             <th>Distance (nm)</th>
+                            <th>Wind Dir (°)</th>
+                            <th>Wind Spd (kt)</th>
                             <th>Hdg (°M)</th>
                             <th>GS (kt)</th>
                             <th>Time (min)</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="legTableBody">
@@ -154,17 +153,21 @@
                             <td>1</td>
                             <td><input type="number" class="track-input" min="0" max="360" step="1"></td>
                             <td><input type="number" class="distance-input" min="0" step="0.1"></td>
+                            <td><input type="number" class="wind-dir-input" min="0" max="360" step="1" style="width: 60px;"></td>
+                            <td><input type="number" class="wind-speed-input" min="0" max="200" step="1" style="width: 60px;"></td>
                             <td class="output heading-output">--</td>
                             <td class="output gs-output">--</td>
                             <td class="output time-output">--</td>
+                            <td><button type="button" class="btn-remove" onclick="removeLeg(this)" style="padding: 2px 6px; font-size: 12px;">×</button></td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr class="total-row">
                             <td colspan="2">Total</td>
                             <td id="totalDistance">0</td>
-                            <td colspan="2"></td>
+                            <td colspan="4"></td>
                             <td id="totalTime">0</td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -178,15 +181,18 @@
         // Page-specific functions
 
         function calculateLeg(row) {
-            const windDirection = parseFloat(document.getElementById('fpWindDirection').value);
-            const windSpeed = parseFloat(document.getElementById('fpWindSpeed').value);
             const tas = parseFloat(document.getElementById('fpTAS').value);
             const variation = parseFloat(document.getElementById('fpVariation').value) || 0;
             
             const trackInput = row.querySelector('.track-input');
             const distanceInput = row.querySelector('.distance-input');
+            const windDirInput = row.querySelector('.wind-dir-input');
+            const windSpeedInput = row.querySelector('.wind-speed-input');
+            
             const track = parseFloat(trackInput.value);
             const distance = parseFloat(distanceInput.value);
+            const windDirection = parseFloat(windDirInput.value);
+            const windSpeed = parseFloat(windSpeedInput.value);
             
             const headingOutput = row.querySelector('.heading-output');
             const gsOutput = row.querySelector('.gs-output');
@@ -233,33 +239,75 @@
             legCount++;
             const tbody = document.getElementById('legTableBody');
             const newRow = document.createElement('tr');
+            
+            // Get master wind values to copy to new leg
+            const masterWindDir = document.getElementById('fpWindDirection').value || '';
+            const masterWindSpeed = document.getElementById('fpWindSpeed').value || '';
+            
             newRow.innerHTML = `
                 <td>${legCount}</td>
                 <td><input type="number" class="track-input" min="0" max="360" step="1"></td>
                 <td><input type="number" class="distance-input" min="0" step="0.1"></td>
+                <td><input type="number" class="wind-dir-input" min="0" max="360" step="1" style="width: 60px;" value="${masterWindDir}"></td>
+                <td><input type="number" class="wind-speed-input" min="0" max="200" step="1" style="width: 60px;" value="${masterWindSpeed}"></td>
                 <td class="output heading-output">--</td>
                 <td class="output gs-output">--</td>
                 <td class="output time-output">--</td>
+                <td><button type="button" class="btn-remove" onclick="removeLeg(this)" style="padding: 2px 6px; font-size: 12px;">×</button></td>
             `;
             tbody.appendChild(newRow);
             
             // Add event listeners to new inputs
             const trackInput = newRow.querySelector('.track-input');
             const distanceInput = newRow.querySelector('.distance-input');
+            const windDirInput = newRow.querySelector('.wind-dir-input');
+            const windSpeedInput = newRow.querySelector('.wind-speed-input');
             
             trackInput.addEventListener('input', () => calculateLeg(newRow));
             distanceInput.addEventListener('input', () => calculateLeg(newRow));
+            windDirInput.addEventListener('input', () => calculateLeg(newRow));
+            windSpeedInput.addEventListener('input', () => calculateLeg(newRow));
+        }
+        
+        function removeLeg(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentNode;
+            row.remove();
+            
+            // Renumber remaining legs
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                row.querySelector('td').textContent = index + 1;
+            });
+            
+            legCount = rows.length;
+            updateTotals();
+        }
+        
+        function copyMasterWindToAllLegs() {
+            const masterWindDir = document.getElementById('fpWindDirection').value;
+            const masterWindSpeed = document.getElementById('fpWindSpeed').value;
+            
+            document.querySelectorAll('#legTableBody tr').forEach(row => {
+                const windDirInput = row.querySelector('.wind-dir-input');
+                const windSpeedInput = row.querySelector('.wind-speed-input');
+                
+                if (windDirInput && masterWindDir !== '') {
+                    windDirInput.value = masterWindDir;
+                }
+                if (windSpeedInput && masterWindSpeed !== '') {
+                    windSpeedInput.value = masterWindSpeed;
+                }
+                
+                calculateLeg(row);
+            });
         }
         
         // Add event listeners for dynamic updates
 
-        // Flight plan listeners
-        document.getElementById('fpWindDirection').addEventListener('input', () => {
-            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
-        });
-        document.getElementById('fpWindSpeed').addEventListener('input', () => {
-            document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
-        });
+        // Master wind listeners - copy to all legs
+        document.getElementById('fpWindDirection').addEventListener('input', copyMasterWindToAllLegs);
+        document.getElementById('fpWindSpeed').addEventListener('input', copyMasterWindToAllLegs);
         document.getElementById('fpTAS').addEventListener('input', () => {
             document.querySelectorAll('#legTableBody tr').forEach(row => calculateLeg(row));
         });
@@ -274,15 +322,94 @@
         document.querySelectorAll('.distance-input').forEach((input, index) => {
             input.addEventListener('input', () => calculateLeg(input.closest('tr')));
         });
+        document.querySelectorAll('.wind-dir-input').forEach((input, index) => {
+            input.addEventListener('input', () => calculateLeg(input.closest('tr')));
+        });
+        document.querySelectorAll('.wind-speed-input').forEach((input, index) => {
+            input.addEventListener('input', () => calculateLeg(input.closest('tr')));
+        });
         
         // Keep form submit for mobile keyboard "Done" button
         document.getElementById('flightPlanForm').addEventListener('submit', function(e) {
             e.preventDefault();
         });
 
+        // Flight plan import functionality
+        function importFlightPlan() {
+            try {
+                const flightPlanData = localStorage.getItem('flightPlanData');
+                if (!flightPlanData) {
+                    alert('No flight plan data found. Please create a flight plan first.');
+                    return;
+                }
+                
+                const data = JSON.parse(flightPlanData);
+                if (!data.legs || data.legs.length === 0) {
+                    alert('No flight plan legs found.');
+                    return;
+                }
+                
+                // Set aircraft data if available
+                if (data.tas) {
+                    document.getElementById('fpTAS').value = data.tas;
+                }
+                
+                // Clear existing legs except the first one
+                const tbody = document.getElementById('legTableBody');
+                while (tbody.children.length > 1) {
+                    tbody.removeChild(tbody.lastChild);
+                }
+                
+                // Update first leg and add additional legs
+                data.legs.forEach((leg, index) => {
+                    let row;
+                    if (index === 0) {
+                        // Use existing first row
+                        row = tbody.querySelector('tr');
+                    } else {
+                        // Add new leg
+                        addLeg();
+                        row = tbody.lastElementChild;
+                    }
+                    
+                    // Populate leg data
+                    const trackInput = row.querySelector('.track-input');
+                    const distanceInput = row.querySelector('.distance-input');
+                    const windDirInput = row.querySelector('.wind-dir-input');
+                    const windSpeedInput = row.querySelector('.wind-speed-input');
+                    
+                    if (leg.track !== undefined) trackInput.value = leg.track.toFixed(0);
+                    if (leg.distance !== undefined) distanceInput.value = leg.distance.toFixed(1);
+                    if (leg.windDirection !== undefined) windDirInput.value = leg.windDirection.toFixed(0);
+                    if (leg.windSpeed !== undefined) windSpeedInput.value = leg.windSpeed.toFixed(0);
+                    
+                    // Trigger calculation
+                    calculateLeg(row);
+                });
+                
+                legCount = data.legs.length;
+                alert(`Flight plan imported with ${data.legs.length} legs.`);
+                
+            } catch (error) {
+                console.error('Error importing flight plan:', error);
+                alert('Error importing flight plan. Please check the data format.');
+            }
+        }
+        
+        // Check for flight plan import on page load
+        function checkForFlightPlanImport() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('import') === 'flightplan') {
+                importFlightPlan();
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             initializeCommon();
+            checkForFlightPlanImport();
         });
     </script>
 </body>
