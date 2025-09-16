@@ -289,6 +289,7 @@
                 <div id="tafSection">
                     <div class="section-title">TAF</div>
                     <div class="taf-text" id="tafText">--</div>
+                    <div class="decoded-weather" id="tafDecoded"></div>
                 </div>
             </div>
         </div>
@@ -373,8 +374,10 @@
                 if (tafData && tafData.length > 0) {
                     const taf = tafData[0];
                     document.getElementById('tafText').textContent = taf.rawTAF || 'No TAF available';
+                    decodeTaf(taf);
                 } else {
                     document.getElementById('tafText').innerHTML = '<div class="error">No TAF available (may not be issued for this airport)</div>';
+                    document.getElementById('tafDecoded').innerHTML = '';
                 }
                 
             } catch (error) {
@@ -384,42 +387,220 @@
             }
         }
         
+        // Weather phenomena dictionary
+        const weatherCodes = {
+            // Intensity
+            '-': 'Light',
+            '+': 'Heavy',
+            'VC': 'In vicinity',
+            
+            // Descriptors
+            'MI': 'Shallow',
+            'PR': 'Partial',
+            'BC': 'Patches',
+            'DR': 'Low drifting',
+            'BL': 'Blowing',
+            'SH': 'Showers',
+            'TS': 'Thunderstorm',
+            'FZ': 'Freezing',
+            
+            // Precipitation
+            'DZ': 'Drizzle',
+            'RA': 'Rain',
+            'SN': 'Snow',
+            'SG': 'Snow grains',
+            'IC': 'Ice crystals',
+            'PL': 'Ice pellets',
+            'GR': 'Hail',
+            'GS': 'Small hail',
+            'UP': 'Unknown precipitation',
+            
+            // Obscuration
+            'BR': 'Mist (vis 1-5km)',
+            'FG': 'Fog (vis <1km)',
+            'FU': 'Smoke',
+            'VA': 'Volcanic ash',
+            'DU': 'Widespread dust',
+            'SA': 'Sand',
+            'HZ': 'Haze',
+            'PY': 'Spray',
+            
+            // Other
+            'SQ': 'Squall',
+            'PO': 'Dust/sand whirls',
+            'DS': 'Duststorm',
+            'SS': 'Sandstorm',
+            'FC': 'Funnel cloud/tornado'
+        };
+        
+        const cloudTypes = {
+            'SKC': 'Sky Clear',
+            'CLR': 'Clear',
+            'NSC': 'No Significant Cloud',
+            'FEW': 'Few (1-2 oktas)',
+            'SCT': 'Scattered (3-4 oktas)',
+            'BKN': 'Broken (5-7 oktas)',
+            'OVC': 'Overcast (8 oktas)',
+            'VV': 'Vertical Visibility',
+            'CB': 'Cumulonimbus',
+            'TCU': 'Towering Cumulus'
+        };
+        
+        function decodeWeatherString(wxString) {
+            if (!wxString) return '';
+            
+            let decoded = [];
+            let remaining = wxString;
+            
+            // Check for intensity
+            if (remaining.startsWith('+') || remaining.startsWith('-')) {
+                decoded.push(weatherCodes[remaining[0]]);
+                remaining = remaining.slice(1);
+            }
+            
+            // Check for weather codes
+            for (let code in weatherCodes) {
+                if (remaining.includes(code)) {
+                    decoded.push(weatherCodes[code]);
+                    remaining = remaining.replace(code, '');
+                }
+            }
+            
+            return decoded.join(' ') || wxString;
+        }
+        
         function decodeMetar(metar) {
             let decoded = '<div class="decoded-weather">';
             
+            // Parse raw METAR for additional info
+            const raw = metar.rawOb || '';
+            
             // Time
             if (metar.reportTime) {
+                const date = new Date(metar.reportTime);
+                const timeStr = date.toUTCString().replace('GMT', 'UTC');
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Observation Time</span>
-                    <span class="decoded-value">${new Date(metar.reportTime).toUTCString()}</span>
+                    <span class="decoded-value">${timeStr}</span>
+                </div>`;
+            }
+            
+            // Auto/Manual
+            if (raw.includes('AUTO')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Report Type</span>
+                    <span class="decoded-value">Automated (no human observation)</span>
                 </div>`;
             }
             
             // Wind
             if (metar.wdir !== undefined && metar.wspd !== undefined) {
-                let windStr = metar.wdir === 'VRB' ? 'Variable' : `${metar.wdir}°`;
-                windStr += ` at ${metar.wspd} kt`;
-                if (metar.wgst) windStr += ` gusting ${metar.wgst} kt`;
+                let windStr = '';
+                if (metar.wspd === 0) {
+                    windStr = 'Calm';
+                } else if (metar.wdir === 'VRB') {
+                    windStr = `Variable direction at ${metar.wspd} kt`;
+                } else {
+                    windStr = `${metar.wdir}° at ${metar.wspd} kt`;
+                    if (metar.wgst) windStr += ` gusting ${metar.wgst} kt`;
+                }
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Wind</span>
                     <span class="decoded-value">${windStr}</span>
                 </div>`;
             }
             
+            // Variable wind direction
+            const varMatch = raw.match(/\d{3}V\d{3}/);
+            if (varMatch) {
+                const dirs = varMatch[0].split('V');
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Wind Variable</span>
+                    <span class="decoded-value">Between ${dirs[0]}° and ${dirs[1]}°</span>
+                </div>`;
+            }
+            
             // Visibility
-            if (metar.visib) {
-                const vis = metar.visib === '10000' ? '10km+' : `${(parseFloat(metar.visib)/1000).toFixed(1)}km`;
+            if (metar.visib !== undefined) {
+                let visStr = '';
+                if (metar.visib === '9999' || metar.visib === '10000') {
+                    visStr = '10 km or more';
+                } else if (metar.visib < 1000) {
+                    visStr = `${metar.visib} metres`;
+                } else {
+                    visStr = `${(parseFloat(metar.visib)/1000).toFixed(1)} km`;
+                }
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Visibility</span>
-                    <span class="decoded-value">${vis}</span>
+                    <span class="decoded-value">${visStr}</span>
+                </div>`;
+            }
+            
+            // RVR (Runway Visual Range)
+            const rvrMatch = raw.match(/R\d{2}[LRC]?\/[PM]?\d{4}/g);
+            if (rvrMatch) {
+                rvrMatch.forEach(rvr => {
+                    const parts = rvr.match(/R(\d{2}[LRC]?)\/([PM]?)(\d{4})/);
+                    if (parts) {
+                        const runway = parts[1];
+                        const trend = parts[2] === 'P' ? '>' : parts[2] === 'M' ? '<' : '';
+                        const range = parts[3];
+                        decoded += `<div class="decoded-item">
+                            <span class="decoded-label">RVR Runway ${runway}</span>
+                            <span class="decoded-value">${trend}${range} metres</span>
+                        </div>`;
+                    }
+                });
+            }
+            
+            // Weather phenomena
+            if (metar.wxString) {
+                const wx = decodeWeatherString(metar.wxString);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Weather</span>
+                    <span class="decoded-value">${wx}</span>
+                </div>`;
+            }
+            
+            // Clouds
+            if (metar.clouds && metar.clouds.length > 0) {
+                const cloudStrs = metar.clouds.map(c => {
+                    const type = cloudTypes[c.cover] || c.cover;
+                    let str = type;
+                    if (c.base) str += ` at ${c.base} ft`;
+                    if (raw.includes(c.cover + ('00' + c.base/100).slice(-3) + 'CB')) str += ' (Cumulonimbus)';
+                    if (raw.includes(c.cover + ('00' + c.base/100).slice(-3) + 'TCU')) str += ' (Towering Cumulus)';
+                    return str;
+                });
+                
+                cloudStrs.forEach((cloudStr, i) => {
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Cloud Layer ${i+1}</span>
+                        <span class="decoded-value">${cloudStr}</span>
+                    </div>`;
+                });
+            } else if (raw.includes('CAVOK')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Conditions</span>
+                    <span class="decoded-value">CAVOK (Ceiling And Visibility OK - vis >10km, no cloud <5000ft, no CB, no sig weather)</span>
+                </div>`;
+            } else if (raw.includes('NSC') || raw.includes('SKC') || raw.includes('CLR')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Clouds</span>
+                    <span class="decoded-value">${cloudTypes[raw.match(/NSC|SKC|CLR/)[0]]}</span>
                 </div>`;
             }
             
             // Temperature & Dewpoint
             if (metar.temp !== undefined) {
+                const spread = metar.temp - metar.dewp;
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Temperature</span>
-                    <span class="decoded-value">${metar.temp}°C / Dewpoint: ${metar.dewp}°C</span>
+                    <span class="decoded-value">${metar.temp}°C</span>
+                </div>`;
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Dewpoint</span>
+                    <span class="decoded-value">${metar.dewp}°C (spread: ${spread}°C)</span>
                 </div>`;
             }
             
@@ -431,17 +612,196 @@
                 </div>`;
             }
             
-            // Clouds
-            if (metar.clouds && metar.clouds.length > 0) {
-                const cloudStr = metar.clouds.map(c => `${c.cover} ${c.base}'`).join(', ');
+            // Recent weather
+            const recentMatch = raw.match(/RE[A-Z]{2,6}/);
+            if (recentMatch) {
+                const recentWx = decodeWeatherString(recentMatch[0].replace('RE', ''));
                 decoded += `<div class="decoded-item">
-                    <span class="decoded-label">Clouds</span>
-                    <span class="decoded-value">${cloudStr}</span>
+                    <span class="decoded-label">Recent Weather</span>
+                    <span class="decoded-value">${recentWx}</span>
+                </div>`;
+            }
+            
+            // Remarks
+            if (raw.includes('NOSIG')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Trend</span>
+                    <span class="decoded-value">NOSIG (No significant change expected in next 2 hours)</span>
                 </div>`;
             }
             
             decoded += '</div>';
             document.getElementById('metarDecoded').innerHTML = decoded;
+        }
+        
+        function decodeTaf(taf) {
+            let decoded = '<div class="decoded-weather">';
+            const raw = taf.rawTAF || '';
+            
+            // Issue time and validity
+            if (taf.issueTime) {
+                const issueDate = new Date(taf.issueTime);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Issued</span>
+                    <span class="decoded-value">${issueDate.toUTCString().replace('GMT', 'UTC')}</span>
+                </div>`;
+            }
+            
+            // Validity period
+            const validMatch = raw.match(/(\d{4})\/(\d{4})/);
+            if (validMatch) {
+                const startDay = validMatch[1].slice(0, 2);
+                const startHour = validMatch[1].slice(2, 4);
+                const endDay = validMatch[2].slice(0, 2);
+                const endHour = validMatch[2].slice(2, 4);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Valid Period</span>
+                    <span class="decoded-value">Day ${startDay} at ${startHour}:00 UTC to Day ${endDay} at ${endHour}:00 UTC</span>
+                </div>`;
+            }
+            
+            // Parse TAF lines
+            const lines = raw.split(/\s+(?=TEMPO|BECMG|PROB|FM)/);
+            
+            lines.forEach((line, index) => {
+                if (index === 0) {
+                    // Base forecast
+                    decoded += '<div style="margin-top: 10px; font-weight: 600; color: #333;">Base Forecast:</div>';
+                    decoded += decodeTafLine(line.replace(/TAF.*?\s+\d{6}Z\s+\d{4}\/\d{4}\s+/, ''));
+                } else {
+                    // Change groups
+                    if (line.startsWith('TEMPO')) {
+                        const tempoMatch = line.match(/TEMPO\s+(\d{4})\/(\d{4})/);
+                        if (tempoMatch) {
+                            decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">TEMPORARY (between ${tempoMatch[1].slice(2)}:00-${tempoMatch[2].slice(2)}:00 UTC):</div>`;
+                            decoded += decodeTafLine(line.replace(/TEMPO\s+\d{4}\/\d{4}\s+/, ''));
+                        }
+                    } else if (line.startsWith('BECMG')) {
+                        const becmgMatch = line.match(/BECMG\s+(\d{4})\/(\d{4})/);
+                        if (becmgMatch) {
+                            decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">BECOMING (between ${becmgMatch[1].slice(2)}:00-${becmgMatch[2].slice(2)}:00 UTC):</div>`;
+                            decoded += decodeTafLine(line.replace(/BECMG\s+\d{4}\/\d{4}\s+/, ''));
+                        }
+                    } else if (line.startsWith('PROB')) {
+                        const probMatch = line.match(/PROB(\d{2})\s+(\d{4})\/(\d{4})/);
+                        if (probMatch) {
+                            decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">PROBABILITY ${probMatch[1]}% (${probMatch[2].slice(2)}:00-${probMatch[3].slice(2)}:00 UTC):</div>`;
+                            decoded += decodeTafLine(line.replace(/PROB\d{2}\s+\d{4}\/\d{4}\s+/, ''));
+                        }
+                    } else if (line.startsWith('FM')) {
+                        const fmMatch = line.match(/FM(\d{6})/);
+                        if (fmMatch) {
+                            const day = fmMatch[1].slice(0, 2);
+                            const hour = fmMatch[1].slice(2, 4);
+                            const min = fmMatch[1].slice(4, 6);
+                            decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">FROM Day ${day} at ${hour}:${min} UTC:</div>`;
+                            decoded += decodeTafLine(line.replace(/FM\d{6}\s+/, ''));
+                        }
+                    }
+                }
+            });
+            
+            decoded += '</div>';
+            document.getElementById('tafDecoded').innerHTML = decoded;
+        }
+        
+        function decodeTafLine(line) {
+            let decoded = '';
+            
+            // Wind
+            const windMatch = line.match(/(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT/);
+            if (windMatch) {
+                let windStr = '';
+                const dir = windMatch[1];
+                const speed = parseInt(windMatch[2]);
+                const gust = windMatch[4] ? parseInt(windMatch[4]) : null;
+                
+                if (speed === 0) {
+                    windStr = 'Calm';
+                } else if (dir === 'VRB') {
+                    windStr = `Variable at ${speed} kt`;
+                } else {
+                    windStr = `${dir}° at ${speed} kt`;
+                }
+                if (gust) windStr += ` gusting ${gust} kt`;
+                
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Wind</span>
+                    <span class="decoded-value">${windStr}</span>
+                </div>`;
+            }
+            
+            // Visibility
+            const visMatch = line.match(/(\d{4}|\d+SM|CAVOK)/);
+            if (visMatch) {
+                let visStr = '';
+                if (visMatch[1] === 'CAVOK') {
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Conditions</span>
+                        <span class="decoded-value">CAVOK (>10km vis, no cloud <5000ft, no sig weather)</span>
+                    </div>`;
+                } else if (visMatch[1].includes('SM')) {
+                    visStr = visMatch[1];
+                } else {
+                    const vis = parseInt(visMatch[1]);
+                    if (vis === 9999) {
+                        visStr = '10 km or more';
+                    } else if (vis < 1000) {
+                        visStr = `${vis} metres`;
+                    } else {
+                        visStr = `${(vis/1000).toFixed(1)} km`;
+                    }
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Visibility</span>
+                        <span class="decoded-value">${visStr}</span>
+                    </div>`;
+                }
+            }
+            
+            // Weather phenomena
+            const wxMatches = line.match(/([+-]?)(VC)?(MI|PR|BC|DR|BL|SH|TS|FZ)?(DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|SQ|PO|DS|SS|FC)+/g);
+            if (wxMatches) {
+                wxMatches.forEach(wx => {
+                    const decoded_wx = decodeWeatherString(wx);
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Weather</span>
+                        <span class="decoded-value">${decoded_wx}</span>
+                    </div>`;
+                });
+            }
+            
+            // Clouds
+            const cloudMatches = line.match(/(SKC|CLR|NSC|FEW|SCT|BKN|OVC|VV)(\d{3})?/g);
+            if (cloudMatches) {
+                cloudMatches.forEach((cloud, i) => {
+                    const parts = cloud.match(/(SKC|CLR|NSC|FEW|SCT|BKN|OVC|VV)(\d{3})?/);
+                    if (parts) {
+                        const type = cloudTypes[parts[1]] || parts[1];
+                        let str = type;
+                        if (parts[2]) {
+                            const height = parseInt(parts[2]) * 100;
+                            str += ` at ${height} ft`;
+                        }
+                        if (cloud.includes('CB')) str += ' (Cumulonimbus)';
+                        if (cloud.includes('TCU')) str += ' (Towering Cumulus)';
+                        
+                        decoded += `<div class="decoded-item">
+                            <span class="decoded-label">Cloud Layer ${i+1}</span>
+                            <span class="decoded-value">${str}</span>
+                        </div>`;
+                    }
+                });
+            }
+            
+            // NSW (No Significant Weather)
+            if (line.includes('NSW')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Weather</span>
+                    <span class="decoded-value">No Significant Weather</span>
+                </div>`;
+            }
+            
+            return decoded;
         }
         
         function refreshWeather() {
