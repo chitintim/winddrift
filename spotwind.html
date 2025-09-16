@@ -87,11 +87,13 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+            color: #333;
             transition: all 0.2s;
         }
         
         .preset-btn:hover {
             background: #e9ecef;
+            color: #333;
         }
         
         .preset-btn.active {
@@ -132,12 +134,43 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 2000;
             border-radius: 8px;
+        }
+        
+        .loading-content {
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .loading-details {
+            font-size: 11px;
+            color: #666;
         }
         
         .forecast-time {
@@ -199,6 +232,22 @@
             </div>
         </div>
         
+        <div class="time-controls" style="margin-bottom: 15px;">
+            <div class="altitude-display">
+                Time: +<span id="hourValue">0</span>h from now
+            </div>
+            <input type="range" class="altitude-slider" id="hourSlider" 
+                   min="0" max="24" step="1" value="0">
+            <div class="altitude-presets">
+                <button class="time-preset-btn preset-btn active" data-hour="0">Now</button>
+                <button class="time-preset-btn preset-btn" data-hour="1">+1h</button>
+                <button class="time-preset-btn preset-btn" data-hour="3">+3h</button>
+                <button class="time-preset-btn preset-btn" data-hour="6">+6h</button>
+                <button class="time-preset-btn preset-btn" data-hour="12">+12h</button>
+                <button class="time-preset-btn preset-btn" data-hour="24">+24h</button>
+            </div>
+        </div>
+        
         <div class="forecast-time" id="forecastTime">Loading forecast data...</div>
         
         <div style="position: relative;">
@@ -213,7 +262,11 @@
                 Wind: --- @ ---°
             </div>
             <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-                <div>Loading wind data...</div>
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text" id="loadingText">Loading wind data...</div>
+                    <div class="loading-details" id="loadingDetails">Preparing request...</div>
+                </div>
             </div>
         </div>
         
@@ -239,25 +292,27 @@
         let map;
         let windDataCache = {};
         let currentAltitude = 2000;
+        let currentHourOffset = 0;
         let windMarkers = [];
         let currentBounds = null;
         let loadDebounceTimer = null;
+        let allHourlyData = null; // Store all hourly data for interpolation
         
         // Map altitude to pressure level
         function altitudeToPressure(altFt) {
             // Approximate pressure levels for altitudes
-            if (altFt <= 500) return { level: '1000hPa', desc: '~300ft' };
-            if (altFt <= 1500) return { level: '975hPa', desc: '~1000ft' };
-            if (altFt <= 2200) return { level: '950hPa', desc: '~1800ft' };
-            if (altFt <= 3000) return { level: '925hPa', desc: '~2500ft' };
-            if (altFt <= 4000) return { level: '900hPa', desc: '~3300ft' };
-            if (altFt <= 5500) return { level: '850hPa', desc: '~5000ft' };
-            if (altFt <= 7000) return { level: '800hPa', desc: '~6500ft' };
-            return { level: '700hPa', desc: '~10000ft' };
+            if (altFt <= 500) return { level: '1000', desc: '~300ft' };
+            if (altFt <= 1500) return { level: '975', desc: '~1000ft' };
+            if (altFt <= 2200) return { level: '950', desc: '~1800ft' };
+            if (altFt <= 3000) return { level: '925', desc: '~2500ft' };
+            if (altFt <= 4000) return { level: '900', desc: '~3300ft' };
+            if (altFt <= 5500) return { level: '850', desc: '~5000ft' };
+            if (altFt <= 7000) return { level: '800', desc: '~6500ft' };
+            return { level: '700', desc: '~10000ft' };
         }
         
         // Generate grid points
-        function generateGrid(bounds, spacing = 0.25) {
+        function generateGrid(bounds, spacing = 0.5) {
             const points = [];
             const latStep = spacing;
             const lonStep = spacing;
@@ -298,79 +353,308 @@
         // Load wind data from Open-Meteo
         async function loadWindData(bounds) {
             const pressure = altitudeToPressure(currentAltitude);
-            const points = generateGrid(bounds);
+            const points = generateGrid(bounds, 0.5); // Use coarser grid to reduce data
             
-            // Build cache key
-            const hour = new Date().getUTCHours();
-            const cacheKey = `${currentAltitude}_${bounds.north}_${bounds.south}_${bounds.west}_${bounds.east}_${hour}`;
+            // Build cache key including altitude band (group by 2000ft)
+            const altBand = Math.floor(currentAltitude / 2000) * 2000;
+            const dataCacheKey = `data_${altBand}_${bounds.north.toFixed(1)}_${bounds.south.toFixed(1)}_${bounds.west.toFixed(1)}_${bounds.east.toFixed(1)}`;
             
-            // Check cache
-            if (windDataCache[cacheKey]) {
-                return windDataCache[cacheKey];
+            // Check if we need to fetch new data
+            if (!windDataCache[dataCacheKey]) {
+                // Update loading text
+                document.getElementById('loadingText').textContent = 'Fetching wind forecast...';
+                document.getElementById('loadingDetails').textContent = `${points.length} locations at ${currentAltitude}ft`;
+                
+                // Prepare API call
+                const lats = points.map(p => p.lat).join(',');
+                const lons = points.map(p => p.lon).join(',');
+                
+                try {
+                    // Build parameters based on altitude band
+                    // Always include surface and commonly available pressure levels
+                    // Open-Meteo typically provides: 1000, 925, 850, 700, 500, 300, 250, 200 hPa
+                    let params = 'wind_speed_10m,wind_direction_10m';
+                    
+                    // Request levels based on altitude band to minimize data transfer
+                    if (altBand <= 2000) {
+                        // Surface to 2000ft: Focus on lower levels
+                        params += ',windspeed_1000hPa,winddirection_1000hPa';
+                        params += ',windspeed_925hPa,winddirection_925hPa';
+                    } else if (altBand <= 6000) {
+                        // 2000-6000ft: Mid levels
+                        params += ',windspeed_925hPa,winddirection_925hPa';
+                        params += ',windspeed_850hPa,winddirection_850hPa';
+                    } else {
+                        // 6000ft+: Higher levels
+                        params += ',windspeed_850hPa,winddirection_850hPa';
+                        params += ',windspeed_700hPa,winddirection_700hPa';
+                    }
+                    
+                    const url = `https://api.open-meteo.com/v1/forecast?` +
+                        `latitude=${lats}&` +
+                        `longitude=${lons}&` +
+                        `hourly=${params}&` +
+                        `forecast_days=2&` +
+                        `wind_speed_unit=kn`;
+                    
+                    console.log(`Fetching wind data for ${points.length} locations at ${currentAltitude}ft`);
+                    console.log('Requested params:', params);
+                    document.getElementById('loadingDetails').textContent = `Downloading ${pressure.desc} wind data...`;
+                    
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    document.getElementById('loadingDetails').textContent = `Processing ${points.length} locations...`;
+                    console.log('API Response received for altitude', currentAltitude);
+                    
+                    // Debug: Check what we got back
+                    if (Array.isArray(data) && data.length > 0) {
+                        console.log('First location hourly keys:', Object.keys(data[0].hourly).filter(k => k.includes('wind')));
+                    } else if (data.hourly) {
+                        console.log('Single location hourly keys:', Object.keys(data.hourly).filter(k => k.includes('wind')));
+                    }
+                    
+                    // Store all hourly data
+                    windDataCache[dataCacheKey] = data;
+                    allHourlyData = data;
+                    
+                } catch (error) {
+                    console.error('Error loading wind data:', error);
+                    document.getElementById('forecastTime').textContent = 'Error loading forecast data';
+                    document.getElementById('loadingText').textContent = 'Error loading data';
+                    document.getElementById('loadingDetails').textContent = error.message;
+                    return [];
+                }
+            } else {
+                allHourlyData = windDataCache[dataCacheKey];
+                document.getElementById('loadingText').textContent = 'Using cached data...';
+                document.getElementById('loadingDetails').textContent = `Processing ${pressure.desc} winds...`;
             }
             
-            // Prepare API call
-            const lats = points.map(p => p.lat).join(',');
-            const lons = points.map(p => p.lon).join(',');
+            // Process data for the current hour with interpolation
+            const processedData = [];
+            const dataArray = Array.isArray(allHourlyData) ? allHourlyData : [allHourlyData];
             
-            const windSpeedParam = `windspeed_${pressure.level.replace('hPa', 'hPa')}`;
-            const windDirParam = `winddirection_${pressure.level.replace('hPa', 'hPa')}`;
+            // Get the current time and calculate the target forecast time
+            const now = new Date();
+            const targetTime = new Date(now.getTime() + currentHourOffset * 3600000);
             
-            const url = `https://api.open-meteo.com/v1/forecast?` +
-                `latitude=${lats}&` +
-                `longitude=${lons}&` +
-                `hourly=${windSpeedParam},${windDirParam}&` +
-                `forecast_days=1&` +
-                `wind_speed_unit=kn`;
+            // Find the hour index in the forecast data
+            // Open-Meteo returns hourly data starting from the current hour
+            const baseTime = new Date(dataArray[0].hourly.time[0]);
+            const timeDiff = targetTime - baseTime;
+            const exactHourIndex = timeDiff / 3600000;
+            const hourIndex = Math.floor(exactHourIndex);
+            const hourFraction = exactHourIndex - hourIndex;
             
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+            console.log(`Time interpolation: hour ${currentHourOffset}, index ${exactHourIndex.toFixed(2)}`);
+            
+            dataArray.forEach((locationData, idx) => {
+                if (!locationData.hourly) {
+                    console.error('Missing hourly data in response for location', idx);
+                    return;
+                }
                 
-                // Process data
-                const processedData = [];
-                const currentHour = hour;
+                // Select wind data based on altitude with interpolation between levels
+                let speeds, directions;
                 
-                // Handle both single location and array responses
-                const isArray = Array.isArray(data.latitude);
-                const count = isArray ? data.latitude.length : 1;
-                
-                for (let i = 0; i < count; i++) {
-                    const lat = isArray ? data.latitude[i] : data.latitude;
-                    const lon = isArray ? data.longitude[i] : data.longitude;
-                    const speeds = isArray ? data.hourly[windSpeedParam][i] : data.hourly[windSpeedParam];
-                    const directions = isArray ? data.hourly[windDirParam][i] : data.hourly[windDirParam];
+                if (currentAltitude <= 100) {
+                    // Use surface wind
+                    speeds = locationData.hourly.wind_speed_10m;
+                    directions = locationData.hourly.wind_direction_10m;
+                } else {
+                    // Determine which pressure levels to use/interpolate
+                    let level1, level2, weight;
                     
-                    // Get current hour data
-                    const speed = Array.isArray(speeds) ? speeds[currentHour] : speeds;
-                    const direction = Array.isArray(directions) ? directions[currentHour] : directions;
+                    if (currentAltitude <= 1000) {
+                        // Interpolate between 10m and 1000hPa
+                        level1 = '10m';
+                        level2 = '1000hPa';
+                        weight = currentAltitude / 1000;
+                    } else if (currentAltitude <= 1800) {
+                        level1 = '1000hPa';
+                        level2 = '975hPa';
+                        weight = (currentAltitude - 1000) / 800;
+                    } else if (currentAltitude <= 2500) {
+                        level1 = '975hPa';
+                        level2 = '950hPa';
+                        weight = (currentAltitude - 1800) / 700;
+                    } else if (currentAltitude <= 3300) {
+                        level1 = '950hPa';
+                        level2 = '925hPa';
+                        weight = (currentAltitude - 2500) / 800;
+                    } else if (currentAltitude <= 4000) {
+                        level1 = '925hPa';
+                        level2 = '900hPa';
+                        weight = (currentAltitude - 3300) / 700;
+                    } else if (currentAltitude <= 5000) {
+                        level1 = '900hPa';
+                        level2 = '850hPa';
+                        weight = (currentAltitude - 4000) / 1000;
+                    } else if (currentAltitude <= 6500) {
+                        level1 = '850hPa';
+                        level2 = '800hPa';
+                        weight = (currentAltitude - 5000) / 1500;
+                    } else if (currentAltitude <= 10000) {
+                        level1 = '800hPa';
+                        level2 = '700hPa';
+                        weight = (currentAltitude - 6500) / 3500;
+                    } else {
+                        level1 = '700hPa';
+                        level2 = '700hPa';
+                        weight = 0;
+                    }
                     
-                    if (speed !== null && direction !== null) {
-                        processedData.push({
-                            lat: lat,
-                            lon: lon,
-                            speed: speed,
-                            direction: direction
-                        });
+                    // Find available pressure levels in the data
+                    const availableLevels = {
+                        '10m': locationData.hourly.wind_speed_10m ? true : false,
+                        '1000hPa': locationData.hourly.windspeed_1000hPa ? true : false,
+                        '975hPa': locationData.hourly.windspeed_975hPa ? true : false,
+                        '950hPa': locationData.hourly.windspeed_950hPa ? true : false,
+                        '925hPa': locationData.hourly.windspeed_925hPa ? true : false,
+                        '900hPa': locationData.hourly.windspeed_900hPa ? true : false,
+                        '850hPa': locationData.hourly.windspeed_850hPa ? true : false,
+                        '800hPa': locationData.hourly.windspeed_800hPa ? true : false,
+                        '700hPa': locationData.hourly.windspeed_700hPa ? true : false
+                    };
+                    
+                    // Debug log available levels on first location
+                    if (idx === 0) {
+                        console.log('Available pressure levels:', Object.keys(availableLevels).filter(k => availableLevels[k]));
+                        console.log(`Ideal levels for ${currentAltitude}ft: ${level1}, ${level2}`);
+                    }
+                    
+                    // Find the nearest available levels if our ideal ones aren't available
+                    const findNearestLevels = (targetLevel) => {
+                        if (availableLevels[targetLevel]) return targetLevel;
+                        
+                        // Pressure levels in order (surface to high altitude)
+                        const orderedLevels = ['10m', '1000hPa', '975hPa', '950hPa', '925hPa', '900hPa', '850hPa', '800hPa', '700hPa'];
+                        const targetIdx = orderedLevels.indexOf(targetLevel);
+                        
+                        // Search for nearest available level
+                        for (let dist = 1; dist < orderedLevels.length; dist++) {
+                            if (targetIdx - dist >= 0 && availableLevels[orderedLevels[targetIdx - dist]]) {
+                                return orderedLevels[targetIdx - dist];
+                            }
+                            if (targetIdx + dist < orderedLevels.length && availableLevels[orderedLevels[targetIdx + dist]]) {
+                                return orderedLevels[targetIdx + dist];
+                            }
+                        }
+                        return '10m'; // Ultimate fallback
+                    };
+                    
+                    // Get actual levels to use
+                    const actualLevel1 = findNearestLevels(level1);
+                    const actualLevel2 = findNearestLevels(level2);
+                    
+                    // Get data for the actual available levels
+                    const speeds1Key = actualLevel1 === '10m' ? 'wind_speed_10m' : `windspeed_${actualLevel1}`;
+                    const speeds2Key = actualLevel2 === '10m' ? 'wind_speed_10m' : `windspeed_${actualLevel2}`;
+                    const dirs1Key = actualLevel1 === '10m' ? 'wind_direction_10m' : `winddirection_${actualLevel1}`;
+                    const dirs2Key = actualLevel2 === '10m' ? 'wind_direction_10m' : `winddirection_${actualLevel2}`;
+                    
+                    const speeds1 = locationData.hourly[speeds1Key];
+                    const speeds2 = locationData.hourly[speeds2Key];
+                    const dirs1 = locationData.hourly[dirs1Key];
+                    const dirs2 = locationData.hourly[dirs2Key];
+                    
+                    // Debug log if we had to substitute
+                    if (idx === 0 && (actualLevel1 !== level1 || actualLevel2 !== level2)) {
+                        console.log(`Substituted with available levels: ${actualLevel1}, ${actualLevel2}`);
+                    }
+                    
+                    // Check if we got the data
+                    if (!speeds1 || !speeds2) {
+                        console.log(`Failed to get pressure data for altitude ${currentAltitude}ft, using 10m`);
+                        speeds = locationData.hourly.wind_speed_10m;
+                        directions = locationData.hourly.wind_direction_10m;
+                    } else {
+                        // Interpolate between pressure levels for each hour
+                        speeds = [];
+                        directions = [];
+                        
+                        for (let i = 0; i < speeds1.length; i++) {
+                            if (speeds1[i] !== null && speeds2[i] !== null) {
+                                // Linear interpolation for speed
+                                speeds[i] = speeds1[i] * (1 - weight) + speeds2[i] * weight;
+                                
+                                // Circular interpolation for direction
+                                let dirDiff = dirs2[i] - dirs1[i];
+                                if (dirDiff > 180) dirDiff -= 360;
+                                if (dirDiff < -180) dirDiff += 360;
+                                let interpDir = dirs1[i] + dirDiff * weight;
+                                if (interpDir < 0) interpDir += 360;
+                                if (interpDir >= 360) interpDir -= 360;
+                                directions[i] = interpDir;
+                            } else {
+                                speeds[i] = speeds1[i] || speeds2[i];
+                                directions[i] = dirs1[i] || dirs2[i];
+                            }
+                        }
                     }
                 }
                 
-                // Cache result
-                windDataCache[cacheKey] = processedData;
+                if (!speeds || !directions) {
+                    console.error('Missing wind data for location', idx);
+                    return;
+                }
                 
-                // Update forecast time
-                const forecastTime = new Date();
-                forecastTime.setUTCHours(currentHour, 0, 0, 0);
-                document.getElementById('forecastTime').textContent = 
-                    `Forecast for: ${forecastTime.toUTCString().replace('GMT', 'UTC')}`;
-                
-                return processedData;
-                
-            } catch (error) {
-                console.error('Error loading wind data:', error);
-                document.getElementById('forecastTime').textContent = 'Error loading forecast data';
-                return [];
-            }
+                // Ensure we have data for interpolation
+                if (hourIndex >= 0 && hourIndex < speeds.length - 1) {
+                    // Interpolate between two hours
+                    const speed1 = speeds[hourIndex];
+                    const speed2 = speeds[hourIndex + 1];
+                    const dir1 = directions[hourIndex];
+                    const dir2 = directions[hourIndex + 1];
+                    
+                    if (speed1 !== null && speed2 !== null) {
+                        // Interpolate speed linearly
+                        const interpolatedSpeed = speed1 + (speed2 - speed1) * hourFraction;
+                        
+                        // Interpolate direction using circular interpolation
+                        let dirDiff = dir2 - dir1;
+                        if (dirDiff > 180) dirDiff -= 360;
+                        if (dirDiff < -180) dirDiff += 360;
+                        let interpolatedDir = dir1 + dirDiff * hourFraction;
+                        if (interpolatedDir < 0) interpolatedDir += 360;
+                        if (interpolatedDir >= 360) interpolatedDir -= 360;
+                        
+                        processedData.push({
+                            lat: locationData.latitude,
+                            lon: locationData.longitude,
+                            speed: interpolatedSpeed,
+                            direction: interpolatedDir
+                        });
+                    }
+                } else if (hourIndex >= 0 && hourIndex < speeds.length && speeds[hourIndex] !== null) {
+                    // Use exact hour if available (no interpolation needed)
+                    processedData.push({
+                        lat: locationData.latitude,
+                        lon: locationData.longitude,
+                        speed: speeds[hourIndex],
+                        direction: directions[hourIndex]
+                    });
+                }
+            });
+            
+            console.log(`Processed ${processedData.length} data points for hour offset ${currentHourOffset}`);
+            
+            // Update forecast time display
+            const forecastTime = new Date();
+            forecastTime.setTime(forecastTime.getTime() + currentHourOffset * 3600000);
+            document.getElementById('forecastTime').textContent = 
+                `Forecast for: ${forecastTime.toUTCString().replace('GMT', 'UTC')}`;
+            
+            // Clear loading text since we're done processing
+            document.getElementById('loadingDetails').textContent = `Rendering ${processedData.length} wind vectors...`;
+            
+            return processedData;
         }
         
         // Update wind display
@@ -489,12 +773,26 @@
         // Update bounds
         function updateBounds() {
             const bounds = map.getBounds();
-            currentBounds = {
+            const newBounds = {
                 north: bounds.getNorth(),
                 south: bounds.getSouth(),
                 west: bounds.getWest(),
                 east: bounds.getEast()
             };
+            
+            // Check if bounds changed significantly
+            if (!currentBounds || 
+                Math.abs(newBounds.north - currentBounds.north) > 0.1 ||
+                Math.abs(newBounds.south - currentBounds.south) > 0.1 ||
+                Math.abs(newBounds.west - currentBounds.west) > 0.1 ||
+                Math.abs(newBounds.east - currentBounds.east) > 0.1) {
+                
+                // Clear cached data when bounds change significantly
+                allHourlyData = null;
+                windDataCache = {};
+            }
+            
+            currentBounds = newBounds;
         }
         
         // Altitude controls
@@ -502,8 +800,8 @@
             currentAltitude = parseInt(e.target.value);
             document.getElementById('altitudeValue').textContent = currentAltitude;
             
-            // Update preset buttons
-            document.querySelectorAll('.preset-btn').forEach(btn => {
+            // Update altitude preset buttons
+            document.querySelectorAll('.preset-btn:not(.time-preset-btn)').forEach(btn => {
                 btn.classList.toggle('active', parseInt(btn.dataset.alt) === currentAltitude);
             });
             
@@ -511,15 +809,44 @@
             updateWindDisplay();
         });
         
-        // Preset buttons
-        document.querySelectorAll('.preset-btn').forEach(btn => {
+        // Altitude preset buttons
+        document.querySelectorAll('.preset-btn:not(.time-preset-btn)').forEach(btn => {
             btn.addEventListener('click', function() {
                 const alt = parseInt(this.dataset.alt);
                 currentAltitude = alt;
                 document.getElementById('altitudeSlider').value = alt;
                 document.getElementById('altitudeValue').textContent = alt;
                 
-                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.preset-btn:not(.time-preset-btn)').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                updateWindDisplay();
+            });
+        });
+        
+        // Time controls
+        document.getElementById('hourSlider').addEventListener('input', function(e) {
+            currentHourOffset = parseInt(e.target.value);
+            document.getElementById('hourValue').textContent = currentHourOffset;
+            
+            // Update time preset buttons
+            document.querySelectorAll('.time-preset-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.hour) === currentHourOffset);
+            });
+            
+            // Reload wind data
+            updateWindDisplay();
+        });
+        
+        // Time preset buttons
+        document.querySelectorAll('.time-preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const hour = parseInt(this.dataset.hour);
+                currentHourOffset = hour;
+                document.getElementById('hourSlider').value = hour;
+                document.getElementById('hourValue').textContent = hour;
+                
+                document.querySelectorAll('.time-preset-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 
                 updateWindDisplay();
