@@ -28,29 +28,22 @@ function updateClock() {
 }
 
 // Navigation highlighting
-function setActiveNav(pageName) {
+function setActiveNav() {
     // Get all navigation links
     const navLinks = document.querySelectorAll('.tab');
+    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    
     navLinks.forEach(link => {
         link.classList.remove('active');
+        const href = link.getAttribute('href') || '';
+        const linkText = link.textContent.toLowerCase();
         
         // Check if this link corresponds to the current page
-        const linkText = link.textContent.toLowerCase();
-        const linkHref = link.getAttribute('href');
-        
-        if (pageName === 'index') {
-            // For index page, check for calculator, wind star, or drift calculator
-            if (linkText.includes('calculator') || linkText.includes('wind star') || linkText.includes('drift')) {
-                const hash = window.location.hash;
-                if (hash === '#windstar' && linkText.includes('wind star')) {
-                    link.classList.add('active');
-                } else if (hash === '#driftcalc' && linkText.includes('drift')) {
-                    link.classList.add('active');
-                } else if (!hash && linkText.includes('calculator') && !linkText.includes('drift')) {
-                    link.classList.add('active');
-                }
-            }
-        } else if (pageName === 'weather' && linkText.includes('weather')) {
+        if ((currentPath === 'index.html' || currentPath === '') && href === 'index.html') {
+            link.classList.add('active');
+        } else if (currentPath === 'windstar.html' && href === 'windstar.html') {
+            link.classList.add('active');
+        } else if (currentPath === 'weather.html' && href === 'weather.html') {
             link.classList.add('active');
         }
     });
@@ -62,20 +55,8 @@ function initializeCommon() {
     updateClock();
     setInterval(updateClock, 1000);
     
-    // Determine current page and set active navigation
-    const path = window.location.pathname;
-    if (path.includes('weather')) {
-        setActiveNav('weather');
-    } else {
-        setActiveNav('index');
-    }
-    
-    // Handle hash changes for single-page navigation
-    window.addEventListener('hashchange', function() {
-        if (window.location.pathname.includes('index')) {
-            setActiveNav('index');
-        }
-    });
+    // Set active navigation based on current page
+    setActiveNav();
 }
 
 // Utility functions for calculations

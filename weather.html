@@ -63,7 +63,25 @@
             font-size: 13px;
             font-weight: 500;
             transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-dot.vfr { background: #22c55e; }
+        .status-dot.mvfr { background: #3b82f6; }
+        .status-dot.ifr { background: #ef4444; }
+        .status-dot.lifr { background: #a855f7; }
+        .status-dot.unknown { background: #6b7280; }
 
         .airport-btn:hover {
             background: #e9ecef;
@@ -192,7 +210,7 @@
         <div class="tabs">
             <a href="index.html" class="tab">Drift Calc</a>
             <a href="windstar.html" class="tab">Wind Star</a>
-            <a href="#" class="tab active">Weather</a>
+            <a href="weather.html" class="tab">Weather</a>
         </div>
         
         <div id="weather-tab" class="tab-content active">
@@ -225,22 +243,7 @@
             
             <div class="section-title">Quick Access</div>
             <div class="airport-list" id="airportList">
-                <button class="airport-btn" onclick="fetchWeather('EGLL')">EGLL</button>
-                <button class="airport-btn" onclick="fetchWeather('EGLF')">EGLF</button>
-                <button class="airport-btn" onclick="fetchWeather('EGTB')">EGTB</button>
-                <button class="airport-btn" onclick="fetchWeather('EGTK')">EGTK</button>
-                <button class="airport-btn" onclick="fetchWeather('EGVN')">EGVN</button>
-                <button class="airport-btn" onclick="fetchWeather('EGLK')">EGLK</button>
-                <button class="airport-btn" onclick="fetchWeather('EGKA')">EGKA</button>
-                <button class="airport-btn" onclick="fetchWeather('EGHR')">EGHR</button>
-                <button class="airport-btn" onclick="fetchWeather('EGHI')">EGHI</button>
-                <button class="airport-btn" onclick="fetchWeather('EGHH')">EGHH</button>
-                <button class="airport-btn" onclick="fetchWeather('EGKK')">EGKK</button>
-                <button class="airport-btn" onclick="fetchWeather('EGMD')">EGMD</button>
-                <button class="airport-btn" onclick="fetchWeather('EGLC')">EGLC</button>
-                <button class="airport-btn" onclick="fetchWeather('EGKB')">EGKB</button>
-                <button class="airport-btn" onclick="fetchWeather('EGTO')">EGTO</button>
-                <button class="airport-btn" onclick="fetchWeather('EGSC')">EGSC</button>
+                <!-- Will be populated by JavaScript -->
             </div>
             
             <div id="weatherDisplay" class="weather-display">
@@ -456,6 +459,7 @@
                     if (metarData && metarData.length > 0) {
                         weatherData[icao] = metarData[0];
                         updateMarker(icao);
+                        updateQuickAccessButtons();
                     }
                 } catch (error) {
                     console.error(`Error loading weather for ${icao}:`, error);
@@ -675,7 +679,10 @@
                 
                 if (index === 0) {
                     periodTitle = 'Base Forecast';
-                    cleanLine = line.replace(/TAF.*?\s+\d{6}Z\s+\d{4}\/\d{4}\s+/, '');
+                    // More robust TAF header removal
+                    cleanLine = line.replace(/TAF\s+[A-Z]{4}\s+\d{6}Z\s+\d{4}\/\d{4}\s*/, '');
+                    // Also remove any amendment indicators
+                    cleanLine = cleanLine.replace(/^(AMD|COR|RTD)\s+/, '');
                 } else {
                     if (line.startsWith('TEMPO')) {
                         const tempoMatch = line.match(/TEMPO\s+(\d{4})\/(\d{4})/);
@@ -892,6 +899,7 @@
                     document.getElementById('metarText').textContent = metar.rawOb || 'No METAR available';
                     decodeMetar(metar);
                     updateMarker(icao);
+                    updateQuickAccessButtons();
                 } else {
                     document.getElementById('metarText').innerHTML = '<div class="error">No METAR available</div>';
                 }
@@ -922,10 +930,32 @@
             }
         }
         
+        function updateQuickAccessButtons() {
+            const airportList = document.getElementById('airportList');
+            let buttonsHTML = '';
+            
+            Object.keys(airports).forEach(icao => {
+                const data = weatherData[icao];
+                let statusDot = '<span class="status-dot unknown"></span>';
+                
+                if (data) {
+                    const ceiling = getCeiling(data.clouds);
+                    const visibility = parseFloat(data.visib) || 10000;
+                    const category = getFlightCategory(ceiling, visibility);
+                    statusDot = `<span class="status-dot ${category.category.toLowerCase()}"></span>`;
+                }
+                
+                buttonsHTML += `<button class="airport-btn" onclick="fetchWeather('${icao}')">${statusDot}${icao}</button>`;
+            });
+            
+            airportList.innerHTML = buttonsHTML;
+        }
+        
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             initializeCommon();
             initMap();
+            updateQuickAccessButtons();
             // Auto-fetch Heathrow weather
             fetchWeather('EGLL');
         });
