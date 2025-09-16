@@ -171,7 +171,10 @@
                         </tr>
                     </tfoot>
                 </table>
-                <button type="button" class="add-leg-btn" onclick="addLeg()">+ Add Leg</button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="add-leg-btn" onclick="addLeg()">+ Add Leg</button>
+                    <button type="button" class="add-leg-btn" onclick="importFlightPlan()" style="background: #007bff; color: white;">Import Flight Plan</button>
+                </div>
             </form>
         </div>
     </div>
@@ -337,6 +340,12 @@
         // Flight plan import functionality
         function importFlightPlan() {
             try {
+                // Check if localStorage is available (some mobile browsers may restrict it)
+                if (typeof(Storage) === "undefined" || !localStorage) {
+                    alert('Local storage not available. Import not supported on this device.');
+                    return;
+                }
+                
                 const flightPlanData = localStorage.getItem('flightPlanData');
                 if (!flightPlanData) {
                     alert('No flight plan data found. Please create a flight plan first.');
@@ -354,8 +363,14 @@
                     document.getElementById('fpTAS').value = data.tas;
                 }
                 
-                // Clear existing legs except the first one
+                // Ensure table exists
                 const tbody = document.getElementById('legTableBody');
+                if (!tbody) {
+                    alert('Error: Page not fully loaded. Please try again.');
+                    return;
+                }
+                
+                // Clear existing legs except the first one
                 while (tbody.children.length > 1) {
                     tbody.removeChild(tbody.lastChild);
                 }
@@ -372,19 +387,23 @@
                         row = tbody.lastElementChild;
                     }
                     
-                    // Populate leg data
-                    const trackInput = row.querySelector('.track-input');
-                    const distanceInput = row.querySelector('.distance-input');
-                    const windDirInput = row.querySelector('.wind-dir-input');
-                    const windSpeedInput = row.querySelector('.wind-speed-input');
-                    
-                    if (leg.track !== undefined) trackInput.value = leg.track.toFixed(0);
-                    if (leg.distance !== undefined) distanceInput.value = leg.distance.toFixed(1);
-                    if (leg.windDirection !== undefined) windDirInput.value = leg.windDirection.toFixed(0);
-                    if (leg.windSpeed !== undefined) windSpeedInput.value = leg.windSpeed.toFixed(0);
-                    
-                    // Trigger calculation
-                    calculateLeg(row);
+                    // Populate leg data safely
+                    try {
+                        const trackInput = row.querySelector('.track-input');
+                        const distanceInput = row.querySelector('.distance-input');
+                        const windDirInput = row.querySelector('.wind-dir-input');
+                        const windSpeedInput = row.querySelector('.wind-speed-input');
+                        
+                        if (trackInput && leg.track !== undefined) trackInput.value = leg.track.toFixed(0);
+                        if (distanceInput && leg.distance !== undefined) distanceInput.value = leg.distance.toFixed(1);
+                        if (windDirInput && leg.windDirection !== undefined) windDirInput.value = leg.windDirection.toFixed(0);
+                        if (windSpeedInput && leg.windSpeed !== undefined) windSpeedInput.value = leg.windSpeed.toFixed(0);
+                        
+                        // Trigger calculation
+                        calculateLeg(row);
+                    } catch (legError) {
+                        console.warn('Error processing leg', index, legError);
+                    }
                 });
                 
                 legCount = data.legs.length;
@@ -398,11 +417,32 @@
         
         // Check for flight plan import on page load
         function checkForFlightPlanImport() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('import') === 'flightplan') {
-                importFlightPlan();
-                // Clean up URL
-                window.history.replaceState({}, document.title, window.location.pathname);
+            try {
+                // Try modern URLSearchParams first
+                const urlParams = new URLSearchParams(window.location.search);
+                const importParam = urlParams.get('import');
+                
+                // Fallback for older mobile browsers
+                const altCheck = window.location.search.includes('import=flightplan');
+                
+                if (importParam === 'flightplan' || altCheck) {
+                    // Add a small delay for mobile Safari compatibility
+                    setTimeout(() => {
+                        importFlightPlan();
+                        // Clean up URL safely
+                        try {
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                        } catch (historyError) {
+                            console.warn('Could not clean up URL:', historyError);
+                        }
+                    }, 250);
+                }
+            } catch (error) {
+                console.warn('Error checking for import parameter:', error);
+                // Still try to import if URL contains the parameter
+                if (window.location.search.includes('import=flightplan')) {
+                    setTimeout(importFlightPlan, 250);
+                }
             }
         }
         

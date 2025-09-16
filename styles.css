@@ -273,4 +273,27 @@ button:active {
         font-size: 12px;
         padding: 8px 4px;
     }
+    
+    /* Mobile-friendly button layout */
+    div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    button {
+        padding: 12px;
+        font-size: 14px;
+        min-height: 44px; /* iOS touch target minimum */
+        width: 100%;
+    }
+    
+    .add-leg-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
 }

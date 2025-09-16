@@ -69,20 +69,38 @@ function generateNavigation() {
     const navPlaceholder = document.getElementById('navigation-placeholder');
     if (navPlaceholder) {
         navPlaceholder.innerHTML = navigation;
+    } else {
+        // Fallback: try again after a short delay for slow loading on mobile
+        setTimeout(() => {
+            const placeholder = document.getElementById('navigation-placeholder');
+            if (placeholder) {
+                placeholder.innerHTML = navigation;
+                // Re-run active navigation after insertion
+                setActiveNav();
+            }
+        }, 100);
     }
 }
 
 // Initialize common functionality
 function initializeCommon() {
-    // Generate navigation
+    // Generate navigation with multiple attempts for mobile compatibility
     generateNavigation();
+    
+    // Double-check navigation after a delay for slow mobile loading
+    setTimeout(() => {
+        const navCheck = document.querySelector('.tabs');
+        if (!navCheck) {
+            generateNavigation();
+        }
+    }, 500);
     
     // Start clock
     updateClock();
     setInterval(updateClock, 1000);
     
     // Set active navigation based on current page
-    setActiveNav();
+    setTimeout(setActiveNav, 100);
 }
 
 // Utility functions for calculations
