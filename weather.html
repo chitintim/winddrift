@@ -443,8 +443,8 @@
             'UP': 'Unknown precipitation',
             
             // Obscuration
-            'BR': 'Mist (vis 1-5km)',
-            'FG': 'Fog (vis <1km)',
+            'BR': 'Mist (vis 1000m-5000m)',
+            'FG': 'Fog (vis <1000m)',
             'FU': 'Smoke',
             'VA': 'Volcanic ash',
             'DU': 'Widespread dust',
@@ -461,16 +461,18 @@
         };
         
         const cloudTypes = {
-            'SKC': 'Sky Clear',
-            'CLR': 'Clear',
+            'SKC': 'Sky Clear (no cloud)',
+            'CLR': 'Clear below 12,000ft (US automated)',
             'NSC': 'No Significant Cloud',
+            'NCD': 'No Cloud Detected (automated)',
             'FEW': 'Few (1-2 oktas)',
             'SCT': 'Scattered (3-4 oktas)',
             'BKN': 'Broken (5-7 oktas)',
             'OVC': 'Overcast (8 oktas)',
-            'VV': 'Vertical Visibility',
+            'VV': 'Vertical Visibility (sky obscured)',
             'CB': 'Cumulonimbus',
-            'TCU': 'Towering Cumulus'
+            'TCU': 'Towering Cumulus',
+            '///': 'Cloud type not available'
         };
         
         function decodeWeatherString(wxString) {
@@ -523,12 +525,12 @@
             // Wind
             if (metar.wdir !== undefined && metar.wspd !== undefined) {
                 let windStr = '';
-                if (metar.wspd === 0) {
+                if (metar.wspd == 0 || raw.includes('00000KT')) {
                     windStr = 'Calm';
                 } else if (metar.wdir === 'VRB') {
                     windStr = `Variable direction at ${metar.wspd} kt`;
                 } else {
-                    windStr = `${metar.wdir}° at ${metar.wspd} kt`;
+                    windStr = `${String(metar.wdir).padStart(3, '0')}° at ${metar.wspd} kt`;
                     if (metar.wgst) windStr += ` gusting ${metar.wgst} kt`;
                 }
                 decoded += `<div class="decoded-item">
@@ -550,13 +552,25 @@
             // Visibility
             if (metar.visib !== undefined) {
                 let visStr = '';
-                if (metar.visib === '9999' || metar.visib === '10000') {
+                const vis = parseFloat(metar.visib);
+                
+                // Check raw METAR for special codes
+                if (raw.includes('9999')) {
                     visStr = '10 km or more';
-                } else if (metar.visib < 1000) {
-                    visStr = `${metar.visib} metres`;
+                } else if (raw.includes('0000')) {
+                    visStr = 'Less than 50 metres';
+                } else if (vis >= 10000) {
+                    visStr = '10 km or more';
+                } else if (vis < 50) {
+                    visStr = 'Less than 50 metres';
+                } else if (vis < 1000) {
+                    visStr = `${vis} metres`;
+                } else if (vis < 5000) {
+                    visStr = `${(vis/1000).toFixed(1)} km`;
                 } else {
-                    visStr = `${(parseFloat(metar.visib)/1000).toFixed(1)} km`;
+                    visStr = `${Math.round(vis/1000)} km`;
                 }
+                
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Visibility</span>
                     <span class="decoded-value">${visStr}</span>
@@ -633,9 +647,23 @@
             
             // QNH
             if (metar.altim) {
+                // altim from API is usually in inHg, convert if needed
+                let qnhValue = metar.altim;
+                let qnhStr = '';
+                
+                // Check if it's in inches (typical range 28-31) or hPa (typical 950-1050)
+                if (qnhValue < 50) {
+                    // It's in inches of mercury, convert to hPa
+                    const hPa = Math.round(qnhValue * 33.8639);
+                    qnhStr = `${hPa} hPa (${qnhValue.toFixed(2)} inHg)`;
+                } else {
+                    // Already in hPa
+                    qnhStr = `${Math.round(qnhValue)} hPa`;
+                }
+                
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">QNH</span>
-                    <span class="decoded-value">${metar.altim} hPa</span>
+                    <span class="decoded-value">${qnhStr}</span>
                 </div>`;
             }
             
@@ -765,18 +793,28 @@
                 if (visMatch[1] === 'CAVOK') {
                     decoded += `<div class="decoded-item">
                         <span class="decoded-label">Conditions</span>
-                        <span class="decoded-value">CAVOK (>10km vis, no cloud <5000ft, no sig weather)</span>
+                        <span class="decoded-value">CAVOK (>10km vis, no cloud <5000ft, no CB, no sig weather)</span>
                     </div>`;
                 } else if (visMatch[1].includes('SM')) {
-                    visStr = visMatch[1];
+                    const miles = parseFloat(visMatch[1].replace('SM', ''));
+                    const km = (miles * 1.609).toFixed(1);
+                    visStr = `${visMatch[1]} (${km} km)`;
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Visibility</span>
+                        <span class="decoded-value">${visStr}</span>
+                    </div>`;
                 } else {
                     const vis = parseInt(visMatch[1]);
                     if (vis === 9999) {
                         visStr = '10 km or more';
+                    } else if (vis === 0) {
+                        visStr = 'Less than 50 metres';
                     } else if (vis < 1000) {
                         visStr = `${vis} metres`;
-                    } else {
+                    } else if (vis < 5000) {
                         visStr = `${(vis/1000).toFixed(1)} km`;
+                    } else {
+                        visStr = `${Math.round(vis/1000)} km`;
                     }
                     decoded += `<div class="decoded-item">
                         <span class="decoded-label">Visibility</span>
