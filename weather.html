@@ -24,7 +24,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             padding: 15px;
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -99,74 +99,16 @@
         }
 
         #weatherMap {
-            height: 500px;
+            height: 400px;
             border-radius: 8px;
             margin-bottom: 15px;
-            position: relative;
-        }
-
-        .map-controls {
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .time-slider-container {
-            margin: 10px 0;
-        }
-
-        .time-slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .time-slider {
-            width: 100%;
-            height: 6px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: #ddd;
-            outline: none;
-            border-radius: 3px;
-            transition: background 0.3s;
-        }
-
-        .time-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-
-        .time-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-
-        .current-time-display {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
         }
 
         .legend {
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-top: 10px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
         }
 
@@ -207,7 +149,6 @@
             font-size: 13px;
             font-weight: 500;
             transition: all 0.3s;
-            position: relative;
         }
 
         .airport-btn:hover {
@@ -219,15 +160,6 @@
             background: #667eea;
             color: white;
             border-color: #667eea;
-        }
-
-        .airport-btn .category-dot {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
         }
 
         .weather-display {
@@ -250,14 +182,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .flight-category {
-            padding: 4px 12px;
-            border-radius: 20px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
         }
 
         .weather-time {
@@ -350,25 +274,29 @@
             border-top: none;
         }
 
-        .map-overlay {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            max-width: 200px;
-        }
-
-        .forecast-time {
-            font-size: 14px;
+        .flight-category-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
-            margin-bottom: 5px;
+            color: white;
+            margin-left: 8px;
         }
 
-        @media (max-width: 768px) {
+        .leaflet-marker-label {
+            position: absolute;
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 1px 1px 1px white, -1px -1px 1px white, 1px -1px 1px white, -1px 1px 1px white;
+        }
+
+        @media (max-width: 480px) {
             .container {
                 padding: 12px;
             }
@@ -382,7 +310,7 @@
             }
             
             #weatherMap {
-                height: 400px;
+                height: 300px;
             }
         }
     </style>
@@ -404,50 +332,56 @@
         </div>
         
         <div id="weather-tab" class="tab-content active">
-            <div class="map-controls">
-                <div class="time-slider-container">
-                    <div class="time-slider-label">
-                        <span>Current</span>
-                        <span>Forecast Time</span>
-                        <span>+24hrs</span>
-                    </div>
-                    <input type="range" class="time-slider" id="timeSlider" min="0" max="24" value="0" step="1">
-                    <div class="current-time-display" id="currentTimeDisplay">Current Conditions (METAR)</div>
+            <div class="section-title">Southern England Airports - Current Conditions</div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color vfr"></div>
+                    <span>VFR</span>
                 </div>
-                
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color vfr"></div>
-                        <span>VFR (>3000ft, >5sm)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color mvfr"></div>
-                        <span>MVFR (1000-3000ft, 3-5sm)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color ifr"></div>
-                        <span>IFR (500-1000ft, 1-3sm)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color lifr"></div>
-                        <span>LIFR (<500ft, <1sm)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color unknown"></div>
-                        <span>No Data</span>
-                    </div>
+                <div class="legend-item">
+                    <div class="legend-color mvfr"></div>
+                    <span>MVFR</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color ifr"></div>
+                    <span>IFR</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color lifr"></div>
+                    <span>LIFR</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color unknown"></div>
+                    <span>No Data</span>
                 </div>
             </div>
             
             <div id="weatherMap"></div>
             
             <div class="section-title">Quick Access</div>
-            <div class="airport-list" id="airportList"></div>
+            <div class="airport-list" id="airportList">
+                <button class="airport-btn" onclick="fetchWeather('EGLL')">EGLL</button>
+                <button class="airport-btn" onclick="fetchWeather('EGLF')">EGLF</button>
+                <button class="airport-btn" onclick="fetchWeather('EGTB')">EGTB</button>
+                <button class="airport-btn" onclick="fetchWeather('EGTK')">EGTK</button>
+                <button class="airport-btn" onclick="fetchWeather('EGVN')">EGVN</button>
+                <button class="airport-btn" onclick="fetchWeather('EGLK')">EGLK</button>
+                <button class="airport-btn" onclick="fetchWeather('EGKA')">EGKA</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHR')">EGHR</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHI')">EGHI</button>
+                <button class="airport-btn" onclick="fetchWeather('EGHH')">EGHH</button>
+                <button class="airport-btn" onclick="fetchWeather('EGKK')">EGKK</button>
+                <button class="airport-btn" onclick="fetchWeather('EGMD')">EGMD</button>
+                <button class="airport-btn" onclick="fetchWeather('EGLC')">EGLC</button>
+                <button class="airport-btn" onclick="fetchWeather('EGKB')">EGKB</button>
+                <button class="airport-btn" onclick="fetchWeather('EGTO')">EGTO</button>
+                <button class="airport-btn" onclick="fetchWeather('EGSC')">EGSC</button>
+            </div>
             
             <div id="weatherDisplay" class="weather-display">
                 <div class="weather-header">
                     <span id="airportName">Select an airport</span>
-                    <span class="flight-category" id="flightCategory"></span>
                     <button class="refresh-btn" onclick="refreshWeather()">Refresh</button>
                 </div>
                 
@@ -471,8 +405,7 @@
         let map;
         let currentAirport = null;
         let markers = {};
-        let airportData = {};
-        let currentTimeOffset = 0;
+        let weatherData = {};
         
         const airports = {
             'EGLL': { name: 'London Heathrow', lat: 51.4700, lon: -0.4543 },
@@ -493,6 +426,67 @@
             'EGSC': { name: 'Cambridge', lat: 52.2050, lon: 0.1750 }
         };
         
+        // Weather phenomena dictionary
+        const weatherCodes = {
+            // Intensity
+            '-': 'Light',
+            '+': 'Heavy',
+            'VC': 'In vicinity',
+            
+            // Descriptors
+            'MI': 'Shallow',
+            'PR': 'Partial',
+            'BC': 'Patches',
+            'DR': 'Low drifting',
+            'BL': 'Blowing',
+            'SH': 'Showers',
+            'TS': 'Thunderstorm',
+            'FZ': 'Freezing',
+            
+            // Precipitation
+            'DZ': 'Drizzle',
+            'RA': 'Rain',
+            'SN': 'Snow',
+            'SG': 'Snow grains',
+            'IC': 'Ice crystals',
+            'PL': 'Ice pellets',
+            'GR': 'Hail',
+            'GS': 'Small hail',
+            'UP': 'Unknown precipitation',
+            
+            // Obscuration
+            'BR': 'Mist (vis 1000m-5000m)',
+            'FG': 'Fog (vis <1000m)',
+            'FU': 'Smoke',
+            'VA': 'Volcanic ash',
+            'DU': 'Widespread dust',
+            'SA': 'Sand',
+            'HZ': 'Haze',
+            'PY': 'Spray',
+            
+            // Other
+            'SQ': 'Squall',
+            'PO': 'Dust/sand whirls',
+            'DS': 'Duststorm',
+            'SS': 'Sandstorm',
+            'FC': 'Funnel cloud/tornado'
+        };
+        
+        const cloudTypes = {
+            'SKC': 'Sky Clear (no cloud)',
+            'CLR': 'Clear below 12,000ft (US automated)',
+            'NSC': 'No Significant Cloud',
+            'NCD': 'No Cloud Detected (automated)',
+            'FEW': 'Few (1-2 oktas)',
+            'SCT': 'Scattered (3-4 oktas)',
+            'BKN': 'Broken (5-7 oktas)',
+            'OVC': 'Overcast (8 oktas)',
+            'VV': 'Vertical Visibility (sky obscured)',
+            'CB': 'Cumulonimbus',
+            'TCU': 'Towering Cumulus',
+            '///': 'Cloud type not available'
+        };
+        
         // Flight category determination
         function getFlightCategory(ceiling, visibility) {
             // Convert visibility to statute miles if in meters
@@ -511,7 +505,7 @@
             } else if (ceiling >= 3000 && visSM >= 5) {
                 return { category: 'VFR', color: '#22c55e', name: 'VFR' };
             } else {
-                return { category: 'UNKNOWN', color: '#6b7280', name: 'Unknown' };
+                return { category: 'UNKNOWN', color: '#6b7280', name: 'No Data' };
             }
         }
         
@@ -527,15 +521,27 @@
             return 999999; // No ceiling
         }
         
-        // Custom icon creation for flight categories
-        function createCategoryIcon(category) {
-            return L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div style="background: ${category.color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12],
-                popupAnchor: [0, -12]
-            });
+        function decodeWeatherString(wxString) {
+            if (!wxString) return '';
+            
+            let decoded = [];
+            let remaining = wxString;
+            
+            // Check for intensity
+            if (remaining.startsWith('+') || remaining.startsWith('-')) {
+                decoded.push(weatherCodes[remaining[0]]);
+                remaining = remaining.slice(1);
+            }
+            
+            // Check for weather codes
+            for (let code in weatherCodes) {
+                if (remaining.includes(code)) {
+                    decoded.push(weatherCodes[code]);
+                    remaining = remaining.replace(code, '');
+                }
+            }
+            
+            return decoded.join(' ') || wxString;
         }
         
         function initMap() {
@@ -546,185 +552,497 @@
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
             
-            // Initialize quick access buttons
-            const airportList = document.getElementById('airportList');
+            // Load all airports with grey markers initially
             Object.keys(airports).forEach(icao => {
-                const btn = document.createElement('button');
-                btn.className = 'airport-btn';
-                btn.innerHTML = `${icao}<div class="category-dot unknown"></div>`;
-                btn.onclick = () => fetchWeatherForAirport(icao);
-                airportList.appendChild(btn);
+                const airport = airports[icao];
+                
+                // Create icon with label
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `
+                        <div style="text-align: center;">
+                            <div class="leaflet-marker-label" style="margin-bottom: 2px;">${icao}</div>
+                            <div style="background: #6b7280; width: 20px; height: 20px; border-radius: 50%; 
+                                        border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+                                        margin: 0 auto;"></div>
+                        </div>`,
+                    iconSize: [40, 35],
+                    iconAnchor: [20, 25],
+                    popupAnchor: [0, -20]
+                });
+                
+                const marker = L.marker([airport.lat, airport.lon], { icon })
+                    .bindPopup(`<b>${icao}</b><br>${airport.name}<br><a href="#" onclick="fetchWeather('${icao}'); return false;">Get Weather</a>`)
+                    .addTo(map);
+                
+                markers[icao] = marker;
             });
             
-            // Load all airport weather on init
-            loadAllAirportWeather();
+            // Load weather for all airports
+            loadAllWeather();
         }
         
-        async function loadAllAirportWeather() {
+        async function loadAllWeather() {
             for (const icao of Object.keys(airports)) {
                 try {
-                    // Fetch METAR
                     const metarResponse = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
                     const metarData = await metarResponse.json();
                     
-                    // Fetch TAF
-                    const tafResponse = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
-                    const tafData = await tafResponse.json();
-                    
-                    airportData[icao] = {
-                        metar: metarData && metarData.length > 0 ? metarData[0] : null,
-                        taf: tafData && tafData.length > 0 ? tafData[0] : null
-                    };
-                    
-                    // Update map marker
-                    updateAirportMarker(icao);
-                    
+                    if (metarData && metarData.length > 0) {
+                        weatherData[icao] = metarData[0];
+                        updateMarker(icao);
+                    }
                 } catch (error) {
-                    console.error(`Error fetching weather for ${icao}:`, error);
-                    airportData[icao] = { metar: null, taf: null };
+                    console.error(`Error loading weather for ${icao}:`, error);
                 }
             }
         }
         
-        function updateAirportMarker(icao) {
-            const data = airportData[icao];
-            if (!data || !data.metar) return;
-            
+        function updateMarker(icao) {
+            const data = weatherData[icao];
             const airport = airports[icao];
-            const ceiling = getCeiling(data.metar.clouds);
-            const visibility = parseFloat(data.metar.visib) || 10000;
-            const category = getFlightCategory(ceiling, visibility);
             
-            // Update or create marker
-            if (markers[icao]) {
-                map.removeLayer(markers[icao]);
+            let color = '#6b7280'; // Default grey
+            
+            if (data) {
+                const ceiling = getCeiling(data.clouds);
+                const visibility = parseFloat(data.visib) || 10000;
+                const category = getFlightCategory(ceiling, visibility);
+                color = category.color;
             }
             
-            const marker = L.marker([airport.lat, airport.lon], {
-                icon: createCategoryIcon(category)
-            }).bindPopup(`
-                <b>${icao}</b><br>
-                ${airport.name}<br>
-                <span style="color: ${category.color}; font-weight: bold;">${category.name}</span><br>
-                <a href="#" onclick="fetchWeatherForAirport('${icao}'); return false;">View Details</a>
-            `).addTo(map);
+            // Update marker icon
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `
+                    <div style="text-align: center;">
+                        <div class="leaflet-marker-label" style="margin-bottom: 2px;">${icao}</div>
+                        <div style="background: ${color}; width: 20px; height: 20px; border-radius: 50%; 
+                                    border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+                                    margin: 0 auto;"></div>
+                    </div>`,
+                iconSize: [40, 35],
+                iconAnchor: [20, 25],
+                popupAnchor: [0, -20]
+            });
             
-            markers[icao] = marker;
-            
-            // Update quick access button
-            const btn = document.querySelector(`.airport-btn:nth-child(${Object.keys(airports).indexOf(icao) + 1}) .category-dot`);
-            if (btn) {
-                btn.className = `category-dot ${category.category.toLowerCase()}`;
+            if (markers[icao]) {
+                markers[icao].setIcon(icon);
             }
         }
         
-        function updateMapForTime(hoursOffset) {
-            // This would parse TAF data for the specified time
-            // For now, we'll just update based on current conditions
-            Object.keys(airportData).forEach(icao => {
-                if (hoursOffset === 0) {
-                    updateAirportMarker(icao);
+        function decodeMetar(metar) {
+            let decoded = '<div class="decoded-weather">';
+            
+            // Parse raw METAR for additional info
+            const raw = metar.rawOb || '';
+            
+            // Time
+            if (metar.reportTime) {
+                const date = new Date(metar.reportTime);
+                const timeStr = date.toUTCString().replace('GMT', 'UTC');
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Observation Time</span>
+                    <span class="decoded-value">${timeStr}</span>
+                </div>`;
+            }
+            
+            // Flight Category
+            const ceiling = getCeiling(metar.clouds);
+            const visibility = parseFloat(metar.visib) || 10000;
+            const category = getFlightCategory(ceiling, visibility);
+            decoded += `<div class="decoded-item">
+                <span class="decoded-label">Flight Category</span>
+                <span class="decoded-value">
+                    <span class="flight-category-badge" style="background: ${category.color};">${category.name}</span>
+                </span>
+            </div>`;
+            
+            // Auto/Manual
+            if (raw.includes('AUTO')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Report Type</span>
+                    <span class="decoded-value">Automated (no human observation)</span>
+                </div>`;
+            }
+            
+            // Wind
+            if (metar.wdir !== undefined && metar.wspd !== undefined) {
+                let windStr = '';
+                if (metar.wspd == 0 || raw.includes('00000KT')) {
+                    windStr = 'Calm';
+                } else if (metar.wdir === 'VRB') {
+                    windStr = `Variable direction at ${metar.wspd} kt`;
                 } else {
-                    // Parse TAF for future time
-                    updateAirportMarkerFromTAF(icao, hoursOffset);
+                    windStr = `${String(metar.wdir).padStart(3, '0')}° at ${metar.wspd} kt`;
+                    if (metar.wgst) windStr += ` gusting ${metar.wgst} kt`;
+                }
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Wind</span>
+                    <span class="decoded-value">${windStr}</span>
+                </div>`;
+            }
+            
+            // Visibility
+            if (metar.visib !== undefined) {
+                let visStr = '';
+                const vis = parseFloat(metar.visib);
+                
+                if (raw.includes('9999')) {
+                    visStr = '10 km or more';
+                } else if (raw.includes('0000')) {
+                    visStr = 'Less than 50 metres';
+                } else if (vis >= 10000) {
+                    visStr = '10 km or more';
+                } else if (vis < 50) {
+                    visStr = 'Less than 50 metres';
+                } else if (vis < 1000) {
+                    visStr = `${vis} metres`;
+                } else if (vis < 5000) {
+                    visStr = `${(vis/1000).toFixed(1)} km`;
+                } else {
+                    visStr = `${Math.round(vis/1000)} km`;
+                }
+                
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Visibility</span>
+                    <span class="decoded-value">${visStr}</span>
+                </div>`;
+            }
+            
+            // Weather phenomena
+            if (metar.wxString) {
+                const wx = decodeWeatherString(metar.wxString);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Weather</span>
+                    <span class="decoded-value">${wx}</span>
+                </div>`;
+            }
+            
+            // Clouds
+            if (metar.clouds && metar.clouds.length > 0) {
+                metar.clouds.forEach((c, i) => {
+                    const type = cloudTypes[c.cover] || c.cover;
+                    let str = type;
+                    if (c.base) str += ` at ${c.base} ft`;
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Cloud Layer ${i+1}</span>
+                        <span class="decoded-value">${str}</span>
+                    </div>`;
+                });
+            } else if (raw.includes('CAVOK')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Conditions</span>
+                    <span class="decoded-value">CAVOK (vis >10km, no cloud <5000ft, no CB, no sig weather)</span>
+                </div>`;
+            }
+            
+            // Temperature & Dewpoint
+            if (metar.temp !== undefined) {
+                const spread = metar.temp - metar.dewp;
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Temperature</span>
+                    <span class="decoded-value">${metar.temp}°C</span>
+                </div>`;
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Dewpoint</span>
+                    <span class="decoded-value">${metar.dewp}°C (spread: ${spread}°C)</span>
+                </div>`;
+            }
+            
+            // QNH
+            if (metar.altim) {
+                let qnhValue = metar.altim;
+                let qnhStr = '';
+                
+                if (qnhValue < 50) {
+                    const hPa = Math.round(qnhValue * 33.8639);
+                    qnhStr = `${hPa} hPa (${qnhValue.toFixed(2)} inHg)`;
+                } else {
+                    qnhStr = `${Math.round(qnhValue)} hPa`;
+                }
+                
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">QNH</span>
+                    <span class="decoded-value">${qnhStr}</span>
+                </div>`;
+            }
+            
+            decoded += '</div>';
+            document.getElementById('metarDecoded').innerHTML = decoded;
+        }
+        
+        function decodeTaf(taf) {
+            let decoded = '<div class="decoded-weather">';
+            const raw = taf.rawTAF || '';
+            
+            // Issue time and validity
+            if (taf.issueTime) {
+                const issueDate = new Date(taf.issueTime);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Issued</span>
+                    <span class="decoded-value">${issueDate.toUTCString().replace('GMT', 'UTC')}</span>
+                </div>`;
+            }
+            
+            // Validity period
+            const validMatch = raw.match(/(\d{4})\/(\d{4})/);
+            if (validMatch) {
+                const startDay = validMatch[1].slice(0, 2);
+                const startHour = validMatch[1].slice(2, 4);
+                const endDay = validMatch[2].slice(0, 2);
+                const endHour = validMatch[2].slice(2, 4);
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Valid Period</span>
+                    <span class="decoded-value">Day ${startDay} at ${startHour}:00 UTC to Day ${endDay} at ${endHour}:00 UTC</span>
+                </div>`;
+            }
+            
+            // Parse TAF lines
+            const lines = raw.split(/\s+(?=TEMPO|BECMG|PROB|FM)/);
+            
+            lines.forEach((line, index) => {
+                let periodTitle = '';
+                let cleanLine = line;
+                
+                if (index === 0) {
+                    periodTitle = 'Base Forecast';
+                    cleanLine = line.replace(/TAF.*?\s+\d{6}Z\s+\d{4}\/\d{4}\s+/, '');
+                } else {
+                    if (line.startsWith('TEMPO')) {
+                        const tempoMatch = line.match(/TEMPO\s+(\d{4})\/(\d{4})/);
+                        if (tempoMatch) {
+                            periodTitle = `TEMPORARY (${tempoMatch[1].slice(2)}:00-${tempoMatch[2].slice(2)}:00 UTC)`;
+                            cleanLine = line.replace(/TEMPO\s+\d{4}\/\d{4}\s+/, '');
+                        }
+                    } else if (line.startsWith('BECMG')) {
+                        const becmgMatch = line.match(/BECMG\s+(\d{4})\/(\d{4})/);
+                        if (becmgMatch) {
+                            periodTitle = `BECOMING (${becmgMatch[1].slice(2)}:00-${becmgMatch[2].slice(2)}:00 UTC)`;
+                            cleanLine = line.replace(/BECMG\s+\d{4}\/\d{4}\s+/, '');
+                        }
+                    } else if (line.startsWith('PROB')) {
+                        const probMatch = line.match(/PROB(\d{2})\s+(\d{4})\/(\d{4})/);
+                        if (probMatch) {
+                            periodTitle = `PROBABILITY ${probMatch[1]}% (${probMatch[2].slice(2)}:00-${probMatch[3].slice(2)}:00 UTC)`;
+                            cleanLine = line.replace(/PROB\d{2}\s+\d{4}\/\d{4}\s+/, '');
+                        }
+                    } else if (line.startsWith('FM')) {
+                        const fmMatch = line.match(/FM(\d{6})/);
+                        if (fmMatch) {
+                            const day = fmMatch[1].slice(0, 2);
+                            const hour = fmMatch[1].slice(2, 4);
+                            const min = fmMatch[1].slice(4, 6);
+                            periodTitle = `FROM Day ${day} at ${hour}:${min} UTC`;
+                            cleanLine = line.replace(/FM\d{6}\s+/, '');
+                        }
+                    }
+                }
+                
+                if (periodTitle) {
+                    // Calculate flight category for this period
+                    const conditions = parseTafConditions(cleanLine);
+                    const category = getFlightCategory(conditions.ceiling, conditions.visibility);
+                    
+                    decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">
+                        ${periodTitle}
+                        <span class="flight-category-badge" style="background: ${category.color};">${category.name}</span>
+                    </div>`;
+                    decoded += decodeTafLine(cleanLine);
                 }
             });
+            
+            decoded += '</div>';
+            document.getElementById('tafDecoded').innerHTML = decoded;
         }
         
-        function updateAirportMarkerFromTAF(icao, hoursOffset) {
-            const data = airportData[icao];
-            if (!data || !data.taf) {
-                updateAirportMarker(icao); // Fall back to METAR
-                return;
+        function parseTafConditions(line) {
+            let ceiling = 999999;
+            let visibility = 10000;
+            
+            // Parse visibility
+            const visMatch = line.match(/(\d{4}|\d+SM|CAVOK)/);
+            if (visMatch) {
+                if (visMatch[1] === 'CAVOK') {
+                    visibility = 10000;
+                } else if (visMatch[1].includes('SM')) {
+                    visibility = parseFloat(visMatch[1].replace('SM', '')) * 1609; // miles to meters
+                } else {
+                    visibility = parseInt(visMatch[1]);
+                }
             }
             
-            // Parse TAF for conditions at specified hour offset
-            // This is simplified - real implementation would parse TAF time groups
-            const airport = airports[icao];
-            
-            // For demonstration, assume conditions degrade slightly over time
-            const baseCeiling = getCeiling(data.metar?.clouds) || 5000;
-            const baseVis = parseFloat(data.metar?.visib) || 10000;
-            
-            const futureCeiling = Math.max(500, baseCeiling - (hoursOffset * 100));
-            const futureVis = Math.max(1000, baseVis - (hoursOffset * 500));
-            
-            const category = getFlightCategory(futureCeiling, futureVis);
-            
-            // Update marker
-            if (markers[icao]) {
-                map.removeLayer(markers[icao]);
+            // Parse clouds for ceiling
+            const cloudMatches = line.match(/(BKN|OVC|VV)(\d{3})/g);
+            if (cloudMatches) {
+                for (let cloud of cloudMatches) {
+                    const match = cloud.match(/(BKN|OVC|VV)(\d{3})/);
+                    if (match) {
+                        const base = parseInt(match[2]) * 100;
+                        if (base < ceiling) ceiling = base;
+                    }
+                }
             }
             
-            const marker = L.marker([airport.lat, airport.lon], {
-                icon: createCategoryIcon(category)
-            }).bindPopup(`
-                <b>${icao}</b><br>
-                ${airport.name}<br>
-                <span style="color: ${category.color}; font-weight: bold;">Forecast: ${category.name}</span><br>
-                <span style="font-size: 12px;">+${hoursOffset}hrs</span><br>
-                <a href="#" onclick="fetchWeatherForAirport('${icao}'); return false;">View Details</a>
-            `).addTo(map);
-            
-            markers[icao] = marker;
+            return { ceiling, visibility };
         }
         
-        async function fetchWeatherForAirport(icao) {
-            currentAirport = icao;
+        function decodeTafLine(line) {
+            let decoded = '';
             
-            // Show weather display
-            document.getElementById('weatherDisplay').classList.add('show');
-            document.getElementById('airportName').textContent = `${icao} - ${airports[icao]?.name || 'Loading...'}`;
-            
-            const data = airportData[icao];
-            if (data && data.metar) {
-                // Display cached data immediately
-                displayWeather(data);
+            // Wind
+            const windMatch = line.match(/(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT/);
+            if (windMatch) {
+                let windStr = '';
+                const dir = windMatch[1];
+                const speed = parseInt(windMatch[2]);
+                const gust = windMatch[4] ? parseInt(windMatch[4]) : null;
+                
+                if (speed === 0) {
+                    windStr = 'Calm';
+                } else if (dir === 'VRB') {
+                    windStr = `Variable at ${speed} kt`;
+                } else {
+                    windStr = `${dir}° at ${speed} kt`;
+                }
+                if (gust) windStr += ` gusting ${gust} kt`;
+                
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Wind</span>
+                    <span class="decoded-value">${windStr}</span>
+                </div>`;
             }
             
-            // Refresh data
-            await fetchWeather(icao);
+            // Visibility
+            const visMatch = line.match(/(\d{4}|\d+SM|CAVOK)/);
+            if (visMatch) {
+                let visStr = '';
+                if (visMatch[1] === 'CAVOK') {
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Conditions</span>
+                        <span class="decoded-value">CAVOK (>10km vis, no cloud <5000ft, no sig weather)</span>
+                    </div>`;
+                } else if (visMatch[1].includes('SM')) {
+                    const miles = parseFloat(visMatch[1].replace('SM', ''));
+                    const km = (miles * 1.609).toFixed(1);
+                    visStr = `${visMatch[1]} (${km} km)`;
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Visibility</span>
+                        <span class="decoded-value">${visStr}</span>
+                    </div>`;
+                } else {
+                    const vis = parseInt(visMatch[1]);
+                    if (vis === 9999) {
+                        visStr = '10 km or more';
+                    } else if (vis === 0) {
+                        visStr = 'Less than 50 metres';
+                    } else if (vis < 1000) {
+                        visStr = `${vis} metres`;
+                    } else if (vis < 5000) {
+                        visStr = `${(vis/1000).toFixed(1)} km`;
+                    } else {
+                        visStr = `${Math.round(vis/1000)} km`;
+                    }
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Visibility</span>
+                        <span class="decoded-value">${visStr}</span>
+                    </div>`;
+                }
+            }
+            
+            // Weather phenomena
+            const wxMatches = line.match(/([+-]?)(VC)?(MI|PR|BC|DR|BL|SH|TS|FZ)?(DZ|RA|SN|SG|IC|PL|GR|GS|UP|BR|FG|FU|VA|DU|SA|HZ|PY|SQ|PO|DS|SS|FC)+/g);
+            if (wxMatches) {
+                wxMatches.forEach(wx => {
+                    const decoded_wx = decodeWeatherString(wx);
+                    decoded += `<div class="decoded-item">
+                        <span class="decoded-label">Weather</span>
+                        <span class="decoded-value">${decoded_wx}</span>
+                    </div>`;
+                });
+            }
+            
+            // Clouds
+            const cloudMatches = line.match(/(SKC|CLR|NSC|FEW|SCT|BKN|OVC|VV)(\d{3})?/g);
+            if (cloudMatches) {
+                cloudMatches.forEach((cloud, i) => {
+                    const parts = cloud.match(/(SKC|CLR|NSC|FEW|SCT|BKN|OVC|VV)(\d{3})?/);
+                    if (parts) {
+                        const type = cloudTypes[parts[1]] || parts[1];
+                        let str = type;
+                        if (parts[2]) {
+                            const height = parseInt(parts[2]) * 100;
+                            str += ` at ${height} ft`;
+                        }
+                        
+                        decoded += `<div class="decoded-item">
+                            <span class="decoded-label">Cloud Layer ${i+1}</span>
+                            <span class="decoded-value">${str}</span>
+                        </div>`;
+                    }
+                });
+            }
+            
+            // NSW (No Significant Weather)
+            if (line.includes('NSW')) {
+                decoded += `<div class="decoded-item">
+                    <span class="decoded-label">Weather</span>
+                    <span class="decoded-value">No Significant Weather</span>
+                </div>`;
+            }
+            
+            return decoded;
         }
         
         async function fetchWeather(icao) {
+            currentAirport = icao;
+            
+            // Highlight selected button
+            document.querySelectorAll('.airport-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target?.classList.add('selected');
+            
+            // Show loading state
+            document.getElementById('weatherDisplay').classList.add('show');
+            document.getElementById('airportName').textContent = `${icao} - ${airports[icao]?.name || 'Loading...'}`;
+            document.getElementById('metarText').innerHTML = '<div class="loading">Fetching METAR...</div>';
+            document.getElementById('tafText').innerHTML = '<div class="loading">Fetching TAF...</div>';
+            document.getElementById('metarDecoded').innerHTML = '';
+            document.getElementById('tafDecoded').innerHTML = '';
+            
             try {
-                // Fetch fresh data
+                // Fetch METAR
                 const metarResponse = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
                 const metarData = await metarResponse.json();
                 
+                if (metarData && metarData.length > 0) {
+                    const metar = metarData[0];
+                    weatherData[icao] = metar;
+                    document.getElementById('metarText').textContent = metar.rawOb || 'No METAR available';
+                    decodeMetar(metar);
+                    updateMarker(icao);
+                } else {
+                    document.getElementById('metarText').innerHTML = '<div class="error">No METAR available</div>';
+                }
+                
+                // Fetch TAF
                 const tafResponse = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`);
                 const tafData = await tafResponse.json();
                 
-                airportData[icao] = {
-                    metar: metarData && metarData.length > 0 ? metarData[0] : null,
-                    taf: tafData && tafData.length > 0 ? tafData[0] : null
-                };
-                
-                displayWeather(airportData[icao]);
-                updateAirportMarker(icao);
+                if (tafData && tafData.length > 0) {
+                    const taf = tafData[0];
+                    document.getElementById('tafText').textContent = taf.rawTAF || 'No TAF available';
+                    decodeTaf(taf);
+                } else {
+                    document.getElementById('tafText').innerHTML = '<div class="error">No TAF available (may not be issued for this airport)</div>';
+                    document.getElementById('tafDecoded').innerHTML = '';
+                }
                 
             } catch (error) {
                 console.error('Error fetching weather:', error);
-            }
-        }
-        
-        function displayWeather(data) {
-            if (data.metar) {
-                document.getElementById('metarText').textContent = data.metar.rawOb || 'No METAR available';
-                
-                // Calculate and display flight category
-                const ceiling = getCeiling(data.metar.clouds);
-                const visibility = parseFloat(data.metar.visib) || 10000;
-                const category = getFlightCategory(ceiling, visibility);
-                
-                const categoryEl = document.getElementById('flightCategory');
-                categoryEl.textContent = category.name;
-                categoryEl.style.background = category.color;
-                categoryEl.style.display = 'inline-block';
-            }
-            
-            if (data.taf) {
-                document.getElementById('tafText').textContent = data.taf.rawTAF || 'No TAF available';
+                document.getElementById('metarText').innerHTML = '<div class="error">Failed to fetch weather data</div>';
+                document.getElementById('tafText').innerHTML = '<div class="error">Failed to fetch weather data</div>';
             }
         }
         
@@ -733,23 +1051,6 @@
                 fetchWeather(currentAirport);
             }
         }
-        
-        // Time slider handler
-        document.getElementById('timeSlider').addEventListener('input', function(e) {
-            const hours = parseInt(e.target.value);
-            currentTimeOffset = hours;
-            
-            if (hours === 0) {
-                document.getElementById('currentTimeDisplay').textContent = 'Current Conditions (METAR)';
-            } else {
-                const futureTime = new Date();
-                futureTime.setHours(futureTime.getHours() + hours);
-                const timeStr = futureTime.toUTCString().replace('GMT', 'UTC').slice(0, -7);
-                document.getElementById('currentTimeDisplay').textContent = `Forecast for ${timeStr} (+${hours}hrs)`;
-            }
-            
-            updateMapForTime(hours);
-        });
         
         // Clock function
         function updateClock() {
@@ -772,14 +1073,14 @@
             document.getElementById('localTime').textContent = ukTime;
         }
         
-        // Initialize when page loads
+        // Initialize map when page loads
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
+            // Auto-fetch Heathrow weather
+            fetchWeather('EGLL');
+            // Start clock
             updateClock();
             setInterval(updateClock, 1000);
-            
-            // Refresh weather data every 5 minutes
-            setInterval(loadAllAirportWeather, 300000);
         });
     </script>
 </body>
