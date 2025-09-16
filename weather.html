@@ -38,8 +38,31 @@
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             font-size: 12px;
+        }
+
+        .time-display {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #444;
+            font-weight: 500;
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .time-display span {
+            margin: 0 10px;
+        }
+
+        .zulu-time {
+            color: #007bff;
+        }
+
+        .local-time {
+            color: #28a745;
         }
 
         .tabs {
@@ -245,6 +268,10 @@
     <div class="container">
         <h1>Wind Drift Calculator</h1>
         <p class="subtitle">UK PPL Navigation Assistant</p>
+        <div class="time-display">
+            <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
+            <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
+        </div>
         
         <div class="tabs">
             <button class="tab" onclick="window.location.href='index.html'">Calculator</button>
@@ -810,11 +837,35 @@
             }
         }
         
+        // Clock function
+        function updateClock() {
+            const now = new Date();
+            
+            // Zulu time (UTC)
+            const zuluHours = String(now.getUTCHours()).padStart(2, '0');
+            const zuluMinutes = String(now.getUTCMinutes()).padStart(2, '0');
+            const zuluSeconds = String(now.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('zuluTime').textContent = `${zuluHours}:${zuluMinutes}:${zuluSeconds}`;
+            
+            // UK local time (handles BST automatically)
+            const ukTime = now.toLocaleString('en-GB', {
+                timeZone: 'Europe/London',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('localTime').textContent = ukTime;
+        }
+        
         // Initialize map when page loads
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
             // Auto-fetch Heathrow weather
             fetchWeather('EGLL');
+            // Start clock
+            updateClock();
+            setInterval(updateClock, 1000);
         });
     </script>
 </body>
