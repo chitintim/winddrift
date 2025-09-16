@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Drift Calculator - Wind Star</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Page-specific styles */
+        .container {
+            max-width: 600px;
+        }
+
+        .wind-star-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .wind-star-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .wind-star-item.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .wind-star-heading {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .wind-star-gs {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .wind-star-wca {
+            font-size: 12px;
+            color: #007bff;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Drift Calculator</h1>
+        <p class="subtitle">Wind Star - 8 Point Reference</p>
+        <div class="time-display">
+            <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
+            <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
+        </div>
+        
+        <div class="tabs">
+            <a href="index.html" class="tab">Drift Calc</a>
+            <a href="#" class="tab active">Wind Star</a>
+            <a href="weather.html" class="tab">Weather</a>
+        </div>
+        
+        <form id="windStarForm">
+            <div class="section-title">Wind & Aircraft</div>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="wsWindDirection">Wind Direction (°)</label>
+                    <input type="number" id="wsWindDirection" min="0" max="360" step="1" required>
+                    <div class="helper-text">From direction</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="wsWindSpeed">Wind Speed (kt)</label>
+                    <input type="number" id="wsWindSpeed" min="0" max="200" step="1" required>
+                </div>
+            </div>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="wsTAS">TAS (kt)</label>
+                    <input type="number" id="wsTAS" min="0" max="500" step="1" value="98" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="wsVariation">Variation (°)</label>
+                    <input type="number" id="wsVariation" min="-180" max="180" step="0.1" value="-0.5">
+                </div>
+            </div>
+        </form>
+        
+        <div id="windStarResults" class="results">
+            <div class="section-title">8-Point Wind Star (Corrections to Steer)</div>
+            <div class="wind-star-grid" id="windStarGrid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <div class="section-title">Quick Reference</div>
+            <div id="windStarSummary" style="font-size: 12px; color: #666; margin-top: 10px;">
+                Enter wind information to generate wind star
+            </div>
+        </div>
+    </div>
+    
+    <script src="common.js"></script>
+    <script>
+        function generateWindStar() {
+            const windDirection = parseFloat(document.getElementById('wsWindDirection').value);
+            const windSpeed = parseFloat(document.getElementById('wsWindSpeed').value);
+            const tas = parseFloat(document.getElementById('wsTAS').value);
+            const variation = parseFloat(document.getElementById('wsVariation').value) || 0;
+            
+            if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(tas)) {
+                document.getElementById('windStarResults').classList.remove('show');
+                return;
+            }
+            
+            const directions = [
+                { name: 'N', course: 0, position: 1 },
+                { name: 'NE', course: 45, position: 2 },
+                { name: 'E', course: 90, position: 5 },
+                { name: 'SE', course: 135, position: 8 },
+                { name: 'S', course: 180, position: 7 },
+                { name: 'SW', course: 225, position: 6 },
+                { name: 'W', course: 270, position: 3 },
+                { name: 'NW', course: 315, position: 0 }
+            ];
+            
+            const gridItems = new Array(9);
+            gridItems[4] = '<div class="wind-star-item empty"></div>';
+            
+            directions.forEach(dir => {
+                const result = calculateWindTriangle(windDirection, windSpeed, dir.course, tas);
+                const wcaSign = result.windCorrectionAngle > 0 ? '+' : '';
+                
+                gridItems[dir.position] = `
+                    <div class="wind-star-item">
+                        <div class="wind-star-heading">${dir.name}</div>
+                        <div class="wind-star-gs">GS: ${result.groundSpeed.toFixed(0)} kt</div>
+                        <div class="wind-star-wca">${wcaSign}${result.windCorrectionAngle.toFixed(0)}°</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('windStarGrid').innerHTML = gridItems.join('');
+            
+            const bestGS = Math.max(...directions.map(d => 
+                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
+            ));
+            const worstGS = Math.min(...directions.map(d => 
+                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
+            ));
+            
+            const bestDir = directions.find(d => 
+                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - bestGS) < 0.1
+            );
+            const worstDir = directions.find(d => 
+                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - worstGS) < 0.1
+            );
+            
+            document.getElementById('windStarSummary').innerHTML = `
+                <strong>Best GS:</strong> ${bestDir.name} at ${bestGS.toFixed(0)} kt<br>
+                <strong>Worst GS:</strong> ${worstDir.name} at ${worstGS.toFixed(0)} kt<br>
+                <strong>Wind:</strong> ${windDirection}°/${windSpeed} kt
+            `;
+            
+            document.getElementById('windStarResults').classList.add('show');
+        }
+
+        // Add event listeners for dynamic updates
+        document.getElementById('wsWindDirection').addEventListener('input', generateWindStar);
+        document.getElementById('wsWindSpeed').addEventListener('input', generateWindStar);
+        document.getElementById('wsTAS').addEventListener('input', generateWindStar);
+        document.getElementById('wsVariation').addEventListener('input', generateWindStar);
+
+        document.getElementById('windStarForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateWindStar();
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCommon();
+        });
+    </script>
+</body>
+</html>

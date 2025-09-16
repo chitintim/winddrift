@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wind Drift Calculator - UK PPL</title>
+    <title>Wind Drift Calculator - Drift Calc</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Page-specific styles */
@@ -11,13 +11,6 @@
             max-width: 600px;
         }
 
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
 
 
         .primary-result {
@@ -33,53 +26,6 @@
             font-size: 18px;
         }
 
-
-        .wind-star-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .wind-star-item {
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-            min-height: 70px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .wind-star-item.empty {
-            background: transparent;
-            border: none;
-        }
-
-        .wind-star-heading {
-            font-weight: 600;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .wind-star-gs {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .wind-star-wca {
-            font-size: 12px;
-            color: #007bff;
-            margin-top: 2px;
-            font-weight: 500;
-        }
 
         .leg-table {
             width: 100%;
@@ -149,136 +95,19 @@
 <body>
     <div class="container">
         <h1>Wind Drift Calculator</h1>
-        <p class="subtitle">UK PPL Navigation Assistant</p>
+        <p class="subtitle">Multi-Leg Flight Calculator</p>
         <div class="time-display">
             <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
             <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
         </div>
         
         <div class="tabs">
-            <a href="#" class="tab active" onclick="switchTab('calculator'); return false;">Calculator</a>
-            <a href="#windstar" class="tab" onclick="switchTab('windstar'); return false;">Wind Star</a>
-            <a href="#driftcalc" class="tab" onclick="switchTab('driftcalc'); return false;">Drift Calculator</a>
+            <a href="#" class="tab active">Drift Calc</a>
+            <a href="windstar.html" class="tab">Wind Star</a>
             <a href="weather.html" class="tab">Weather</a>
         </div>
         
-        <div id="calculator-tab" class="tab-content active">
-            <form id="windCalcForm">
-                <div class="section-title">Wind Information</div>
-                
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="windDirection">Wind Direction (°)</label>
-                        <input type="number" id="windDirection" min="0" max="360" step="1" required>
-                        <div class="helper-text">From direction</div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="windSpeed">Wind Speed (kt)</label>
-                        <input type="number" id="windSpeed" min="0" max="200" step="1" required>
-                    </div>
-                </div>
-                
-                <div class="section-title">Aircraft Information</div>
-                
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="trueCourse">True Course (°)</label>
-                        <input type="number" id="trueCourse" min="0" max="360" step="1" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="trueAirspeed">TAS (kt)</label>
-                        <input type="number" id="trueAirspeed" min="0" max="500" step="1" value="98" required>
-                    </div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="variation">Mag Variation (°)</label>
-                    <input type="number" id="variation" min="-180" max="180" step="0.1" value="-0.5">
-                    <div class="helper-text">West negative, East positive (Default: White Waltham 2025)</div>
-                </div>
-                
-            </form>
-            
-            <div id="results" class="results">
-                <div class="primary-result">
-                    <div class="result-item">
-                        <span class="result-label">True Heading</span>
-                        <span class="result-value" id="trueHeading">--</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Ground Speed</span>
-                        <span class="result-value" id="groundSpeed">--</span>
-                    </div>
-                </div>
-                
-                <div class="result-item">
-                    <span class="result-label">Magnetic Heading</span>
-                    <span class="result-value" id="magneticHeading">--</span>
-                </div>
-                
-                <div class="result-item">
-                    <span class="result-label">Wind Correction Angle</span>
-                    <span class="result-value" id="windCorrectionAngle">--</span>
-                </div>
-                
-                <div class="section-title">Wind Components</div>
-                
-                <div class="result-item">
-                    <span class="result-label">Head/Tailwind</span>
-                    <span class="result-value" id="headwindComponent">--</span>
-                </div>
-                
-                <div class="result-item">
-                    <span class="result-label">Crosswind</span>
-                    <span class="result-value" id="crosswindComponent">--</span>
-                </div>
-            </div>
-        </div>
-        
-        <div id="windstar-tab" class="tab-content">
-            <form id="windStarForm">
-                <div class="section-title">Wind & Aircraft</div>
-                
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="wsWindDirection">Wind Direction (°)</label>
-                        <input type="number" id="wsWindDirection" min="0" max="360" step="1" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="wsWindSpeed">Wind Speed (kt)</label>
-                        <input type="number" id="wsWindSpeed" min="0" max="200" step="1" required>
-                    </div>
-                </div>
-                
-                <div class="input-row">
-                    <div class="input-group">
-                        <label for="wsTAS">TAS (kt)</label>
-                        <input type="number" id="wsTAS" min="0" max="500" step="1" value="98" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="wsVariation">Variation (°)</label>
-                        <input type="number" id="wsVariation" min="-180" max="180" step="0.1" value="-0.5">
-                    </div>
-                </div>
-                
-            </form>
-            
-            <div id="windStarResults" class="results">
-                <div class="section-title">8-Point Wind Star (Corrections to Steer)</div>
-                <div class="wind-star-grid" id="windStarGrid">
-                </div>
-                
-                <div class="section-title">Quick Reference</div>
-                <div id="windStarSummary" style="font-size: 12px; color: #666; margin-top: 10px;">
-                </div>
-            </div>
-        </div>
-
-        <div id="driftcalc-tab" class="tab-content">
+        <div class="tab-content active">
             <form id="flightPlanForm">
                 <div class="section-title">Wind & Aircraft Setup</div>
                 
@@ -345,120 +174,6 @@
     <script src="common.js"></script>
     <script>
         // Page-specific functions
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            if (tab === 'calculator') {
-                document.querySelector('.tab:nth-child(1)').classList.add('active');
-                document.getElementById('calculator-tab').classList.add('active');
-                window.location.hash = '';
-            } else if (tab === 'windstar') {
-                document.querySelector('.tab:nth-child(2)').classList.add('active');
-                document.getElementById('windstar-tab').classList.add('active');
-                window.location.hash = 'windstar';
-            } else if (tab === 'driftcalc') {
-                document.querySelector('.tab:nth-child(3)').classList.add('active');
-                document.getElementById('driftcalc-tab').classList.add('active');
-                window.location.hash = 'driftcalc';
-            }
-        }
-        
-        function performCalculation() {
-            const windDirection = parseFloat(document.getElementById('windDirection').value);
-            const windSpeed = parseFloat(document.getElementById('windSpeed').value);
-            const trueCourse = parseFloat(document.getElementById('trueCourse').value);
-            const trueAirspeed = parseFloat(document.getElementById('trueAirspeed').value);
-            const variation = parseFloat(document.getElementById('variation').value) || 0;
-            
-            if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(trueCourse) || isNaN(trueAirspeed)) {
-                document.getElementById('results').classList.remove('show');
-                return;
-            }
-            
-            const result = calculateWindTriangle(windDirection, windSpeed, trueCourse, trueAirspeed);
-            const magneticHeading = normalizeHeading(result.trueHeading - variation);
-            
-            document.getElementById('trueHeading').textContent = `${result.trueHeading.toFixed(0)}°`;
-            document.getElementById('groundSpeed').textContent = `${result.groundSpeed.toFixed(0)} kt`;
-            document.getElementById('magneticHeading').textContent = `${magneticHeading.toFixed(0)}°`;
-            document.getElementById('windCorrectionAngle').textContent = 
-                `${result.windCorrectionAngle > 0 ? '+' : ''}${result.windCorrectionAngle.toFixed(1)}°`;
-            
-            const headwindText = result.headwindComponent > 0 ? 
-                `${result.headwindComponent.toFixed(0)} kt HW` : 
-                `${Math.abs(result.headwindComponent).toFixed(0)} kt TW`;
-            document.getElementById('headwindComponent').textContent = headwindText;
-            
-            document.getElementById('crosswindComponent').textContent = 
-                `${result.crosswindComponent.toFixed(0)} kt ${result.crosswindDirection}`;
-            
-            document.getElementById('results').classList.add('show');
-        }
-        
-        function generateWindStar() {
-            const windDirection = parseFloat(document.getElementById('wsWindDirection').value);
-            const windSpeed = parseFloat(document.getElementById('wsWindSpeed').value);
-            const tas = parseFloat(document.getElementById('wsTAS').value);
-            const variation = parseFloat(document.getElementById('wsVariation').value) || 0;
-            
-            if (isNaN(windDirection) || isNaN(windSpeed) || isNaN(tas)) {
-                document.getElementById('windStarResults').classList.remove('show');
-                return;
-            }
-            
-            const directions = [
-                { name: 'N', course: 0, position: 1 },
-                { name: 'NE', course: 45, position: 2 },
-                { name: 'E', course: 90, position: 5 },
-                { name: 'SE', course: 135, position: 8 },
-                { name: 'S', course: 180, position: 7 },
-                { name: 'SW', course: 225, position: 6 },
-                { name: 'W', course: 270, position: 3 },
-                { name: 'NW', course: 315, position: 0 }
-            ];
-            
-            const gridItems = new Array(9);
-            gridItems[4] = '<div class="wind-star-item empty"></div>';
-            
-            directions.forEach(dir => {
-                const result = calculateWindTriangle(windDirection, windSpeed, dir.course, tas);
-                const wcaSign = result.windCorrectionAngle > 0 ? '+' : '';
-                
-                gridItems[dir.position] = `
-                    <div class="wind-star-item">
-                        <div class="wind-star-heading">${dir.name}</div>
-                        <div class="wind-star-gs">GS: ${result.groundSpeed.toFixed(0)} kt</div>
-                        <div class="wind-star-wca">${wcaSign}${result.windCorrectionAngle.toFixed(0)}°</div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('windStarGrid').innerHTML = gridItems.join('');
-            
-            const bestGS = Math.max(...directions.map(d => 
-                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
-            ));
-            const worstGS = Math.min(...directions.map(d => 
-                calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed
-            ));
-            
-            const bestDir = directions.find(d => 
-                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - bestGS) < 0.1
-            );
-            const worstDir = directions.find(d => 
-                Math.abs(calculateWindTriangle(windDirection, windSpeed, d.course, tas).groundSpeed - worstGS) < 0.1
-            );
-            
-            document.getElementById('windStarSummary').innerHTML = `
-                <strong>Best GS:</strong> ${bestDir.name} at ${bestGS.toFixed(0)} kt<br>
-                <strong>Worst GS:</strong> ${worstDir.name} at ${worstGS.toFixed(0)} kt<br>
-                <strong>Wind:</strong> ${windDirection}°/${windSpeed} kt
-            `;
-            
-            document.getElementById('windStarResults').classList.add('show');
-        }
 
         function calculateLeg(row) {
             const windDirection = parseFloat(document.getElementById('fpWindDirection').value);
@@ -535,16 +250,6 @@
         }
         
         // Add event listeners for dynamic updates
-        document.getElementById('windDirection').addEventListener('input', performCalculation);
-        document.getElementById('windSpeed').addEventListener('input', performCalculation);
-        document.getElementById('trueCourse').addEventListener('input', performCalculation);
-        document.getElementById('trueAirspeed').addEventListener('input', performCalculation);
-        document.getElementById('variation').addEventListener('input', performCalculation);
-        
-        document.getElementById('wsWindDirection').addEventListener('input', generateWindStar);
-        document.getElementById('wsWindSpeed').addEventListener('input', generateWindStar);
-        document.getElementById('wsTAS').addEventListener('input', generateWindStar);
-        document.getElementById('wsVariation').addEventListener('input', generateWindStar);
 
         // Flight plan listeners
         document.getElementById('fpWindDirection').addEventListener('input', () => {
@@ -569,16 +274,6 @@
         });
         
         // Keep form submit for mobile keyboard "Done" button
-        document.getElementById('windCalcForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            performCalculation();
-        });
-        
-        document.getElementById('windStarForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            generateWindStar();
-        });
-
         document.getElementById('flightPlanForm').addEventListener('submit', function(e) {
             e.preventDefault();
         });
@@ -586,16 +281,6 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             initializeCommon();
-            
-            // Handle initial hash
-            const hash = window.location.hash;
-            if (hash === '#windstar') {
-                switchTab('windstar');
-            } else if (hash === '#driftcalc') {
-                switchTab('driftcalc');
-            } else {
-                switchTab('calculator');
-            }
         });
     </script>
 </body>
