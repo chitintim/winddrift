@@ -266,12 +266,13 @@ button:active {
     }
     
     .tabs {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(5, 1fr);
     }
     
     .tab {
-        font-size: 12px;
-        padding: 8px 4px;
+        font-size: 10px;
+        padding: 6px 2px;
+        text-align: center;
     }
     
     /* Mobile-friendly button layout */
@@ -295,5 +296,98 @@ button:active {
         cursor: pointer;
         font-weight: 600;
         transition: transform 0.2s;
+    }
+    
+    /* Compact spot wind controls on mobile */
+    .altitude-presets {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+        margin-top: 8px !important;
+    }
+    
+    .preset-btn {
+        padding: 6px 4px !important;
+        font-size: 11px !important;
+        min-height: 36px !important;
+        border-radius: 4px !important;
+    }
+    
+    .altitude-controls, .time-controls {
+        margin-bottom: 10px !important;
+    }
+    
+    .altitude-display {
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+    
+    /* Flight plan mobile optimizations */
+    .delete-waypoint {
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+        border-radius: 3px !important;
+    }
+    
+    .waypoint-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+    }
+    
+    .waypoint-name {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Compress leg info layout */
+    .leg-info {
+        margin-top: 5px !important;
+        background: #f8f9fa !important;
+        padding: 6px !important;
+        border-radius: 4px !important;
+        position: relative !important;
+    }
+    
+    .leg-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        margin-bottom: 2px !important;
+        font-size: 12px !important;
+    }
+    
+    .leg-label {
+        font-weight: 500 !important;
+        color: #666 !important;
+        min-width: 60px !important;
+    }
+    
+    .leg-value {
+        font-weight: 600 !important;
+        color: #333 !important;
+    }
+    
+    /* Add "TO WP" prefix to waypoint name */
+    .waypoint-item:not(:first-child) .waypoint-name::before {
+        content: "TO " !important;
+        font-size: 10px !important;
+        color: #666 !important;
+        font-weight: 400 !important;
+    }
+    
+    /* Compact date display on mobile */
+    .time-display {
+        font-size: 12px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .time-display span {
+        margin: 0 5px !important;
+        display: inline-block !important;
+    }
+    
+    .date-display {
+        font-weight: 600 !important;
+        color: #667eea !important;
     }
 }

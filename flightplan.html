@@ -247,6 +247,7 @@
         <h1>Wind Drift Calculator</h1>
         <p class="subtitle">Flight Plan Map</p>
         <div class="time-display">
+            <span class="date-display"><span id="currentDate">--</span></span>
             <span class="zulu-time">Zulu: <span id="zuluTime">--:--:--</span></span>
             <span class="local-time">UK: <span id="localTime">--:--:--</span></span>
         </div>
@@ -521,10 +522,6 @@
                     
                     html += `
                         <div class="leg-info">
-                            <div class="leg-row">
-                                <span class="leg-label">From:</span>
-                                <span class="leg-value">${prevWp.name}</span>
-                            </div>
                             <div class="leg-row">
                                 <span class="leg-label">Distance:</span>
                                 <span class="leg-value">${distance.toFixed(1)} nm</span>

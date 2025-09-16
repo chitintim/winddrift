@@ -4,6 +4,18 @@
 function updateClock() {
     const now = new Date();
     
+    // Current date
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        const dateStr = now.toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        dateElement.textContent = dateStr;
+    }
+    
     // Zulu time (UTC)
     const zuluHours = String(now.getUTCHours()).padStart(2, '0');
     const zuluMinutes = String(now.getUTCMinutes()).padStart(2, '0');
