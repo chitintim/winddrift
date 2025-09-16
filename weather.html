@@ -649,6 +649,10 @@
             let decoded = '<div class="decoded-weather">';
             const raw = taf.rawTAF || '';
             
+            // Get current date for today/tomorrow determination
+            const now = new Date();
+            const todayDay = now.getUTCDate();
+            
             // Issue time and validity
             if (taf.issueTime) {
                 const issueDate = new Date(taf.issueTime);
@@ -660,26 +664,31 @@
             
             // Validity period
             const validMatch = raw.match(/(\d{4})\/(\d{4})/);
+            let validStartDay, validEndDay;
             if (validMatch) {
-                const startDay = validMatch[1].slice(0, 2);
+                validStartDay = parseInt(validMatch[1].slice(0, 2));
                 const startHour = validMatch[1].slice(2, 4);
-                const endDay = validMatch[2].slice(0, 2);
+                validEndDay = parseInt(validMatch[2].slice(0, 2));
                 const endHour = validMatch[2].slice(2, 4);
                 decoded += `<div class="decoded-item">
                     <span class="decoded-label">Valid Period</span>
-                    <span class="decoded-value">Day ${startDay} at ${startHour}:00 UTC to Day ${endDay} at ${endHour}:00 UTC</span>
+                    <span class="decoded-value">Day ${validStartDay} at ${startHour}:00 UTC to Day ${validEndDay} at ${endHour}:00 UTC</span>
                 </div>`;
             }
             
-            // Parse TAF lines
+            // Parse TAF lines and group by day
             const lines = raw.split(/\s+(?=TEMPO|BECMG|PROB|FM)/);
+            let periodsByDay = {};
             
             lines.forEach((line, index) => {
                 let periodTitle = '';
                 let cleanLine = line;
+                let periodDay = validStartDay; // Default to start day
+                let periodHour = 0;
                 
                 if (index === 0) {
                     periodTitle = 'Base Forecast';
+                    periodDay = validStartDay;
                     // More robust TAF header removal
                     cleanLine = line.replace(/TAF\s+[A-Z]{4}\s+\d{6}Z\s+\d{4}\/\d{4}\s*/, '');
                     // Also remove any amendment indicators
@@ -688,44 +697,87 @@
                     if (line.startsWith('TEMPO')) {
                         const tempoMatch = line.match(/TEMPO\s+(\d{4})\/(\d{4})/);
                         if (tempoMatch) {
-                            periodTitle = `TEMPORARY (${tempoMatch[1].slice(2)}:00-${tempoMatch[2].slice(2)}:00 UTC)`;
+                            periodDay = parseInt(tempoMatch[1].slice(0, 2));
+                            periodHour = parseInt(tempoMatch[1].slice(2, 4));
+                            const endHour = tempoMatch[2].slice(2, 4);
+                            periodTitle = `TEMPORARY (${tempoMatch[1].slice(2)}:00-${endHour}:00 UTC)`;
                             cleanLine = line.replace(/TEMPO\s+\d{4}\/\d{4}\s+/, '');
                         }
                     } else if (line.startsWith('BECMG')) {
                         const becmgMatch = line.match(/BECMG\s+(\d{4})\/(\d{4})/);
                         if (becmgMatch) {
-                            periodTitle = `BECOMING (${becmgMatch[1].slice(2)}:00-${becmgMatch[2].slice(2)}:00 UTC)`;
+                            periodDay = parseInt(becmgMatch[1].slice(0, 2));
+                            periodHour = parseInt(becmgMatch[1].slice(2, 4));
+                            const endHour = becmgMatch[2].slice(2, 4);
+                            periodTitle = `BECOMING (${becmgMatch[1].slice(2)}:00-${endHour}:00 UTC)`;
                             cleanLine = line.replace(/BECMG\s+\d{4}\/\d{4}\s+/, '');
                         }
                     } else if (line.startsWith('PROB')) {
                         const probMatch = line.match(/PROB(\d{2})\s+(\d{4})\/(\d{4})/);
                         if (probMatch) {
-                            periodTitle = `PROBABILITY ${probMatch[1]}% (${probMatch[2].slice(2)}:00-${probMatch[3].slice(2)}:00 UTC)`;
+                            periodDay = parseInt(probMatch[2].slice(0, 2));
+                            periodHour = parseInt(probMatch[2].slice(2, 4));
+                            const endHour = probMatch[3].slice(2, 4);
+                            periodTitle = `PROBABILITY ${probMatch[1]}% (${probMatch[2].slice(2)}:00-${endHour}:00 UTC)`;
                             cleanLine = line.replace(/PROB\d{2}\s+\d{4}\/\d{4}\s+/, '');
                         }
                     } else if (line.startsWith('FM')) {
                         const fmMatch = line.match(/FM(\d{6})/);
                         if (fmMatch) {
-                            const day = fmMatch[1].slice(0, 2);
-                            const hour = fmMatch[1].slice(2, 4);
+                            periodDay = parseInt(fmMatch[1].slice(0, 2));
+                            periodHour = parseInt(fmMatch[1].slice(2, 4));
                             const min = fmMatch[1].slice(4, 6);
-                            periodTitle = `FROM Day ${day} at ${hour}:${min} UTC`;
+                            periodTitle = `FROM ${periodHour}:${min} UTC`;
                             cleanLine = line.replace(/FM\d{6}\s+/, '');
                         }
                     }
                 }
                 
                 if (periodTitle) {
-                    // Calculate flight category for this period
-                    const conditions = parseTafConditions(cleanLine);
+                    // Store in day groups
+                    if (!periodsByDay[periodDay]) {
+                        periodsByDay[periodDay] = [];
+                    }
+                    periodsByDay[periodDay].push({
+                        title: periodTitle,
+                        cleanLine: cleanLine,
+                        hour: periodHour
+                    });
+                }
+            });
+            
+            // Display periods grouped by day
+            const sortedDays = Object.keys(periodsByDay).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            sortedDays.forEach(day => {
+                const dayNum = parseInt(day);
+                let dayLabel = `Day ${dayNum}`;
+                
+                // Add today/tomorrow labels
+                if (dayNum === todayDay) {
+                    dayLabel += ' (Today)';
+                } else if (dayNum === todayDay + 1 || (todayDay >= 28 && dayNum === 1)) {
+                    dayLabel += ' (Tomorrow)';
+                }
+                
+                decoded += `<div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #dee2e6;">
+                    <div style="font-size: 16px; font-weight: 700; color: #495057; margin-bottom: 10px;">${dayLabel}</div>`;
+                
+                // Sort periods within day by hour
+                periodsByDay[day].sort((a, b) => a.hour - b.hour);
+                
+                periodsByDay[day].forEach(period => {
+                    const conditions = parseTafConditions(period.cleanLine);
                     const category = getFlightCategory(conditions.ceiling, conditions.visibility);
                     
                     decoded += `<div style="margin-top: 10px; font-weight: 600; color: #333;">
-                        ${periodTitle}
+                        ${period.title}
                         <span class="flight-category-badge" style="background: ${category.color};">${category.name}</span>
                     </div>`;
-                    decoded += decodeTafLine(cleanLine);
-                }
+                    decoded += decodeTafLine(period.cleanLine);
+                });
+                
+                decoded += '</div>';
             });
             
             decoded += '</div>';
