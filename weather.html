@@ -3,92 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wind Drift Calculator - UK PPL</title>
+    <title>Wind Drift Calculator - Weather</title>
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            padding: 15px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 5px;
-            font-size: 22px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-
-        .time-display {
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #444;
-            font-weight: 500;
-            background: #f0f0f0;
-            padding: 8px;
-            border-radius: 6px;
-        }
-
-        .time-display span {
-            margin: 0 10px;
-        }
-
-        .zulu-time {
-            color: #007bff;
-        }
-
-        .local-time {
-            color: #28a745;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .tab {
-            flex: 1;
-            min-width: 100px;
-            padding: 10px;
-            background: #f0f0f0;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.3s;
-        }
-
-        .tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+        /* Page-specific styles */
 
         .tab-content {
             display: none;
@@ -127,11 +46,6 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
-        .vfr { background: #22c55e; }
-        .mvfr { background: #3b82f6; }
-        .ifr { background: #ef4444; }
-        .lifr { background: #a855f7; }
-        .unknown { background: #6b7280; }
 
         .airport-list {
             display: grid;
@@ -245,44 +159,7 @@
             background: #218838;
         }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-            margin: 12px 0 8px;
-            padding-top: 12px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .section-title:first-child {
-            margin-top: 0;
-            padding-top: 0;
-            border-top: none;
-        }
-
-        .flight-category-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            color: white;
-            margin-left: 8px;
-        }
 
         .leaflet-marker-label {
             position: absolute;
@@ -297,18 +174,6 @@
         }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 12px;
-            }
-            
-            .tabs {
-                flex-direction: column;
-            }
-            
-            .tab {
-                width: 100%;
-            }
-            
             #weatherMap {
                 height: 300px;
             }
@@ -325,10 +190,10 @@
         </div>
         
         <div class="tabs">
-            <button class="tab" onclick="window.location.href='index.html'">Calculator</button>
-            <button class="tab" onclick="window.location.href='index.html#windstar'">Wind Star</button>
-            <button class="tab" onclick="window.location.href='index.html#flightplan'">Flight Plan</button>
-            <button class="tab active">Weather</button>
+            <a href="index.html" class="tab">Calculator</a>
+            <a href="index.html#windstar" class="tab">Wind Star</a>
+            <a href="index.html#driftcalc" class="tab">Drift Calculator</a>
+            <a href="#" class="tab active">Weather</a>
         </div>
         
         <div id="weather-tab" class="tab-content active">
@@ -400,6 +265,7 @@
         </div>
     </div>
     
+    <script src="common.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map;
@@ -686,22 +552,25 @@
             // Visibility
             if (metar.visib !== undefined) {
                 let visStr = '';
-                const vis = parseFloat(metar.visib);
                 
+                // Check raw string for special cases
                 if (raw.includes('9999')) {
                     visStr = '10 km or more';
                 } else if (raw.includes('0000')) {
                     visStr = 'Less than 50 metres';
-                } else if (vis >= 10000) {
-                    visStr = '10 km or more';
-                } else if (vis < 50) {
-                    visStr = 'Less than 50 metres';
-                } else if (vis < 1000) {
-                    visStr = `${vis} metres`;
-                } else if (vis < 5000) {
-                    visStr = `${(vis/1000).toFixed(1)} km`;
                 } else {
-                    visStr = `${Math.round(vis/1000)} km`;
+                    const vis = parseFloat(metar.visib);
+                    if (vis >= 9999) {
+                        visStr = '10 km or more';
+                    } else if (vis < 50) {
+                        visStr = 'Less than 50 metres';
+                    } else if (vis < 1000) {
+                        visStr = `${vis} metres`;
+                    } else if (vis < 5000) {
+                        visStr = `${(vis/1000).toFixed(1)} km`;
+                    } else {
+                        visStr = `${Math.round(vis/1000)} km`;
+                    }
                 }
                 
                 decoded += `<div class="decoded-item">
@@ -865,6 +734,8 @@
             if (visMatch) {
                 if (visMatch[1] === 'CAVOK') {
                     visibility = 10000;
+                } else if (visMatch[1] === '9999') {
+                    visibility = 10000; // 10km or more
                 } else if (visMatch[1].includes('SM')) {
                     visibility = parseFloat(visMatch[1].replace('SM', '')) * 1609; // miles to meters
                 } else {
@@ -932,7 +803,7 @@
                     </div>`;
                 } else {
                     const vis = parseInt(visMatch[1]);
-                    if (vis === 9999) {
+                    if (vis === 9999 || vis >= 9999) {
                         visStr = '10 km or more';
                     } else if (vis === 0) {
                         visStr = 'Less than 50 metres';
@@ -1052,35 +923,12 @@
             }
         }
         
-        // Clock function
-        function updateClock() {
-            const now = new Date();
-            
-            // Zulu time (UTC)
-            const zuluHours = String(now.getUTCHours()).padStart(2, '0');
-            const zuluMinutes = String(now.getUTCMinutes()).padStart(2, '0');
-            const zuluSeconds = String(now.getUTCSeconds()).padStart(2, '0');
-            document.getElementById('zuluTime').textContent = `${zuluHours}:${zuluMinutes}:${zuluSeconds}`;
-            
-            // UK local time (handles BST automatically)
-            const ukTime = now.toLocaleString('en-GB', {
-                timeZone: 'Europe/London',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            document.getElementById('localTime').textContent = ukTime;
-        }
-        
-        // Initialize map when page loads
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            initializeCommon();
             initMap();
             // Auto-fetch Heathrow weather
             fetchWeather('EGLL');
-            // Start clock
-            updateClock();
-            setInterval(updateClock, 1000);
         });
     </script>
 </body>
