@@ -81,14 +81,19 @@ function generateNavigation() {
     const navPlaceholder = document.getElementById('navigation-placeholder');
     if (navPlaceholder) {
         navPlaceholder.innerHTML = navigation;
+        console.log('Navigation generated successfully');
     } else {
+        console.warn('Navigation placeholder not found, retrying...');
         // Fallback: try again after a short delay for slow loading on mobile
         setTimeout(() => {
             const placeholder = document.getElementById('navigation-placeholder');
             if (placeholder) {
                 placeholder.innerHTML = navigation;
+                console.log('Navigation generated on retry');
                 // Re-run active navigation after insertion
                 setActiveNav();
+            } else {
+                console.error('Navigation placeholder still not found');
             }
         }, 100);
     }
@@ -96,23 +101,28 @@ function generateNavigation() {
 
 // Initialize common functionality
 function initializeCommon() {
-    // Generate navigation with multiple attempts for mobile compatibility
-    generateNavigation();
-    
-    // Double-check navigation after a delay for slow mobile loading
-    setTimeout(() => {
-        const navCheck = document.querySelector('.tabs');
-        if (!navCheck) {
-            generateNavigation();
-        }
-    }, 500);
-    
-    // Start clock
-    updateClock();
-    setInterval(updateClock, 1000);
-    
-    // Set active navigation based on current page
-    setTimeout(setActiveNav, 100);
+    try {
+        // Generate navigation with multiple attempts for mobile compatibility
+        generateNavigation();
+        
+        // Double-check navigation after a delay for slow mobile loading
+        setTimeout(() => {
+            const navCheck = document.querySelector('.tabs');
+            if (!navCheck) {
+                console.log('Navigation not found on second check, regenerating...');
+                generateNavigation();
+            }
+        }, 500);
+        
+        // Start clock
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        // Set active navigation based on current page
+        setTimeout(setActiveNav, 100);
+    } catch (error) {
+        console.error('Error in initializeCommon:', error);
+    }
 }
 
 // Utility functions for calculations
@@ -132,28 +142,36 @@ function normalizeHeading(heading) {
 
 // Wind triangle calculation
 function calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed) {
-    const wcRad = toRadians(windDir);
-    const tcRad = toRadians(trueCourse);
+    // Given:
+    // trueCourse: desired ground track (°)
+    // trueAirspeed: true airspeed (kt)
+    // windDir: wind FROM direction (°)
+    // windSpeed: wind speed (kt)
     
+    // Calculate relative wind angle
     const windAngle = windDir - trueCourse;
     const windAngleRad = toRadians(windAngle);
     
-    const crosswind = windSpeed * Math.sin(windAngleRad);
-    const headwind = windSpeed * Math.cos(windAngleRad);
-    
+    // Calculate wind correction angle using sine rule
     let wca = 0;
-    if (trueAirspeed > 0) {
-        const sinWCA = crosswind / trueAirspeed;
+    if (trueAirspeed > 0 && windSpeed > 0) {
+        const sinWCA = (windSpeed / trueAirspeed) * Math.sin(windAngleRad);
         if (Math.abs(sinWCA) <= 1) {
             wca = toDegrees(Math.asin(sinWCA));
         }
     }
     
-    const trueHeading = normalizeHeading(trueCourse + wca);
+    // Heading to fly (subtract WCA from track)
+    const trueHeading = normalizeHeading(trueCourse - wca);
     
-    const gsX = trueAirspeed * Math.sin(toRadians(trueHeading)) + windSpeed * Math.sin(wcRad);
-    const gsY = trueAirspeed * Math.cos(toRadians(trueHeading)) + windSpeed * Math.cos(wcRad);
-    const groundSpeed = Math.sqrt(gsX * gsX + gsY * gsY);
+    // Ground speed using cosine rule
+    const wcaRad = toRadians(wca);
+    const groundSpeed = Math.max(0, trueAirspeed * Math.cos(wcaRad) + 
+                       windSpeed * Math.cos(windAngleRad));
+    
+    // Calculate wind components for reference
+    const crosswind = windSpeed * Math.sin(windAngleRad);
+    const headwind = windSpeed * Math.cos(windAngleRad);
     
     return {
         trueHeading: trueHeading,
