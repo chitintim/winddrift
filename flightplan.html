@@ -379,21 +379,12 @@
                 const toggleContainer = toggleBtn ? toggleBtn.parentElement : null;
                 
                 if (toggleContainer) {
-                    // Prevent all click/touch events from bubbling to the map
+                    // Prevent click events from bubbling to the map (but don't use capture phase)
                     ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'pointerdown', 'pointerup'].forEach(eventType => {
                         toggleContainer.addEventListener(eventType, function(e) {
                             e.stopPropagation();
-                            e.stopImmediatePropagation();
-                        }, true);
+                        }, false);  // Use bubbling phase, not capture
                     });
-                    
-                    // Also add to button itself for redundancy
-                    if (toggleBtn) {
-                        toggleBtn.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            e.stopImmediatePropagation();
-                        }, true);
-                    }
                 }
             }, 100);
         }
@@ -402,7 +393,7 @@
             // Prevent the click from bubbling up to the map
             if (event) {
                 event.stopPropagation();
-                event.preventDefault();
+                // Don't preventDefault - let the button click work normally
             }
             
             const toggleBtn = document.getElementById('mapToggle');
