@@ -132,6 +132,19 @@
             transition: background 0.2s;
         }
         
+        @media (max-width: 480px) {
+            .delete-waypoint {
+                padding: 3px 6px !important;
+                font-size: 9px !important;
+                border-radius: 3px !important;
+            }
+            
+            #mapToggle {
+                padding: 4px 6px !important;
+                font-size: 10px !important;
+            }
+        }
+        
         .delete-waypoint:hover {
             background: #c82333;
         }
@@ -257,6 +270,16 @@
         <div class="map-container">
             <div id="planMap"></div>
             
+            <!-- Map view toggle -->
+            <div style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
+                <button id="mapToggle" onclick="toggleMapView()" 
+                        style="background: white; border: 2px solid #ccc; border-radius: 5px; 
+                               padding: 6px 10px; cursor: pointer; font-size: 12px; 
+                               box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    🛰️ Satellite
+                </button>
+            </div>
+            
             <div class="waypoint-panel">
                 <div class="instructions">
                     📍 Click on the map to add waypoints<br>
@@ -309,20 +332,48 @@
         }
         
         // Initialize map
+        let streetLayer, satelliteLayer;
+        let currentMapView = 'street';
+        
         function initMap() {
             // Center on UK
             map = L.map('planMap').setView([52.5, -1.5], 7);
             
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Street map layer (OpenStreetMap)
+            streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 15,
                 attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            });
+            
+            // Satellite layer (ESRI World Imagery)
+            satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 15,
+                attribution: 'Tiles © Esri'
+            });
+            
+            // Add default layer
+            streetLayer.addTo(map);
             
             // Add click handler
             map.on('click', function(e) {
                 addWaypoint(e.latlng.lat, e.latlng.lng);
             });
+        }
+        
+        function toggleMapView() {
+            const toggleBtn = document.getElementById('mapToggle');
+            
+            if (currentMapView === 'street') {
+                map.removeLayer(streetLayer);
+                satelliteLayer.addTo(map);
+                toggleBtn.innerHTML = '🗺️ Street';
+                currentMapView = 'satellite';
+            } else {
+                map.removeLayer(satelliteLayer);
+                streetLayer.addTo(map);
+                toggleBtn.innerHTML = '🛰️ Satellite';
+                currentMapView = 'street';
+            }
         }
         
         // Add waypoint
