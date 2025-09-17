@@ -276,7 +276,7 @@
             <div id="planMap" style="position: relative;">
                 <!-- Map view toggle - positioned inside the map div -->
                 <div style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
-                    <button id="mapToggle" onclick="toggleMapView()" 
+                    <button id="mapToggle" onclick="toggleMapView(event)" 
                             style="background: white; 
                                    border: 2px solid rgba(0,0,0,0.2);
                                    border-radius: 4px; 
@@ -372,9 +372,39 @@
             map.on('click', function(e) {
                 addWaypoint(e.latlng.lat, e.latlng.lng);
             });
+            
+            // Set up toggle button click prevention after a short delay
+            setTimeout(function() {
+                const toggleBtn = document.getElementById('mapToggle');
+                const toggleContainer = toggleBtn ? toggleBtn.parentElement : null;
+                
+                if (toggleContainer) {
+                    // Prevent all click/touch events from bubbling to the map
+                    ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'pointerdown', 'pointerup'].forEach(eventType => {
+                        toggleContainer.addEventListener(eventType, function(e) {
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                        }, true);
+                    });
+                    
+                    // Also add to button itself for redundancy
+                    if (toggleBtn) {
+                        toggleBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                        }, true);
+                    }
+                }
+            }, 100);
         }
         
-        function toggleMapView() {
+        function toggleMapView(event) {
+            // Prevent the click from bubbling up to the map
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
             const toggleBtn = document.getElementById('mapToggle');
             
             // Create road overlay layer if it doesn't exist
