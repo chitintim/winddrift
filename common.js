@@ -164,21 +164,15 @@ function calculateWindTriangle(windDir, windSpeed, trueCourse, trueAirspeed) {
     // Heading to fly (subtract WCA from track)
     const trueHeading = normalizeHeading(trueCourse - wca);
     
-    // Ground speed using vector addition
-    // Convert wind vector to ground-relative components
-    const windToRad = toRadians(windDir + 180); // Wind TO direction
-    const windX = windSpeed * Math.sin(windToRad);
-    const windY = windSpeed * Math.cos(windToRad);
+    // Ground speed calculation
+    // GS = TAS * cos(drift angle) + wind component along track
+    // The drift angle is the WCA, and the wind component along track is the headwind/tailwind component
+    const wcaRad = toRadians(wca);
+    const headwindComponent = windSpeed * Math.cos(windAngleRad);
     
-    // Aircraft velocity vector
-    const hdgRad = toRadians(trueHeading);
-    const acftX = trueAirspeed * Math.sin(hdgRad);
-    const acftY = trueAirspeed * Math.cos(hdgRad);
-    
-    // Ground velocity is sum of aircraft and wind vectors
-    const gsX = acftX + windX;
-    const gsY = acftY + windY;
-    const groundSpeed = Math.sqrt(gsX * gsX + gsY * gsY);
+    // Ground speed is the TAS adjusted for drift angle plus the headwind component
+    // Note: headwindComponent is negative for headwind, positive for tailwind
+    const groundSpeed = Math.max(0, trueAirspeed * Math.cos(wcaRad) - headwindComponent);
     
     // Calculate wind components for reference
     const crosswind = windSpeed * Math.sin(windAngleRad);
