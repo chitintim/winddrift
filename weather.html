@@ -1080,18 +1080,40 @@
             const airportList = document.getElementById('airportList');
             let buttonsHTML = '';
             
-            Object.keys(airports).forEach(icao => {
-                const data = weatherData[icao];
-                let statusDot = '<span class="status-dot unknown"></span>';
-                
-                if (data) {
-                    const ceiling = getCeiling(data.clouds);
-                    const visibility = parseFloat(data.visib) || 10000;
-                    const category = getFlightCategory(ceiling, visibility);
-                    statusDot = `<span class="status-dot ${category.category.toLowerCase()}"></span>`;
+            // Only show airports in the London/Southeast area (visible in default map view)
+            const quickAccessAirports = [
+                'EGLL', // London Heathrow
+                'EGKK', // London Gatwick  
+                'EGLC', // London City
+                'EGSS', // London Stansted
+                'EGGW', // London Luton
+                'EGLF', // Farnborough
+                'EGTK', // Oxford Kidlington
+                'EGVN', // Brize Norton
+                'EGLK', // Blackbushe
+                'EGTB', // Wycombe Air Park
+                'EGKA', // Shoreham
+                'EGKB', // Biggin Hill
+                'EGHI', // Southampton
+                'EGHH', // Bournemouth
+                'EGSC', // Cambridge
+                'EGTO'  // Rochester
+            ];
+            
+            quickAccessAirports.forEach(icao => {
+                if (airports[icao]) {
+                    const data = weatherData[icao];
+                    let statusDot = '<span class="status-dot unknown"></span>';
+                    
+                    if (data) {
+                        const ceiling = getCeiling(data.clouds);
+                        const visibility = parseFloat(data.visib) || 10000;
+                        const category = getFlightCategory(ceiling, visibility);
+                        statusDot = `<span class="status-dot ${category.category.toLowerCase()}"></span>`;
+                    }
+                    
+                    buttonsHTML += `<button class="airport-btn" onclick="fetchWeather('${icao}')">${statusDot}${icao}</button>`;
                 }
-                
-                buttonsHTML += `<button class="airport-btn" onclick="fetchWeather('${icao}')">${statusDot}${icao}</button>`;
             });
             
             airportList.innerHTML = buttonsHTML;
