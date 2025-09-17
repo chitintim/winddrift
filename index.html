@@ -487,5 +487,30 @@
             checkForFlightPlanImport();
         });
     </script>
+    
+    <!-- Calculation explanation -->
+    <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666; line-height: 1.6;">
+        <h4 style="margin-top: 0; color: #333; font-size: 14px;">Wind Triangle Calculations</h4>
+        <p style="margin: 10px 0;">
+            <strong>Wind Correction Angle (WCA):</strong><br>
+            WCA = arcsin((Wind Speed / TAS) × sin(Wind Angle))<br>
+            where Wind Angle = Wind Direction - Track
+        </p>
+        <p style="margin: 10px 0;">
+            <strong>Magnetic Heading:</strong><br>
+            True Heading = Track - WCA<br>
+            Magnetic Heading = True Heading - Magnetic Variation
+        </p>
+        <p style="margin: 10px 0;">
+            <strong>Ground Speed:</strong><br>
+            GS = TAS × cos(WCA) - Headwind Component<br>
+            where Headwind Component = Wind Speed × cos(Wind Angle)<br>
+            <em style="font-size: 11px;">(Positive for headwind, negative for tailwind)</em>
+        </p>
+        <p style="margin: 10px 0; font-size: 11px; font-style: italic;">
+            Note: All calculations use the wind triangle method. A crosswind requires crabbing into the wind (WCA) to maintain track, 
+            which slightly reduces ground speed. Headwinds reduce ground speed, tailwinds increase it.
+        </p>
+    </div>
 </body>
 </html>
