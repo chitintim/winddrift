@@ -42,21 +42,29 @@ Shared JavaScript functionality:
 - `calculateWindTriangle()` - Core wind triangle mathematics
 - `toRadians()`, `toDegrees()`, `normalizeHeading()` - Utility functions
 
-### Recent Updates (September 2025)
+### Recent Updates (December 2024)
 
-#### Major Features Added:
-1. **Interactive Flight Plan Map** - Click-to-add waypoints with automatic wind fetching
+#### Core Functionality Updates:
+1. **Corrected Wind Triangle Calculation** - Fixed critical formula error (was adding WCA instead of subtracting)
 2. **Per-Leg Wind Support** - Individual wind inputs for each leg in drift calculator
 3. **Master Wind Cascading** - New legs automatically inherit master wind values
-4. **Flight Plan Integration** - Seamless export from map to drift calculator
-5. **Standardized Navigation** - Dynamic navigation generation across all 5 pages
+4. **Flight Plan Integration** - Seamless export from map to drift calculator with mobile Safari fixes
+5. **Satellite Map View** - Toggle between street and satellite views on flight plan map
+
+#### Mobile Optimizations:
+6. **5-Column Navigation** - All navigation tabs displayed side-by-side on mobile
+7. **Compressed Spot Wind Controls** - Altitude/time buttons in 3-column grid layout
+8. **Balanced Table Columns** - Optimized track (80px) and distance (65px) column widths
+9. **Compact Delete Buttons** - Reduced size with 9px font on mobile devices
+10. **Current Date Display** - Added date to time display across all pages
+11. **Mobile Safari Import Fix** - Added localStorage checks and fallback mechanisms
+12. **Waypoint Clarity** - "TO" prefix for destination waypoints
 
 #### Technical Improvements:
-6. **Altitude-Based Wind Data** - Pressure level interpolation for accurate winds
-7. **Enhanced Spot Wind** - Real-time wind visualization with altitude/time controls
-8. **Fixed TAF visibility parsing** - No longer confuses wind direction with visibility
-9. **Added day separation to TAF** - Groups periods by day with "Today/Tomorrow" labels
-10. **Improved mobile styling** - Better button visibility, consistent navigation
+13. **Unified Wind Calculations** - Single source of truth in common.js
+14. **Navigation Error Handling** - Retry mechanisms and fallback strategies
+15. **Altitude-Based Wind Data** - Pressure level interpolation for accurate winds
+16. **Enhanced Spot Wind** - Real-time wind visualization with altitude/time controls
 
 ### Pages
 
@@ -217,19 +225,24 @@ Complete ICAO weather phenomena:
 
 ## Calculations Reference
 
-### Wind Triangle Mathematics
+### Wind Triangle Mathematics (CORRECTED)
 ```
 Wind Angle = Wind Direction - True Course
 Crosswind = Wind Speed × sin(Wind Angle)
 Headwind = Wind Speed × cos(Wind Angle)
-WCA = arcsin(Crosswind / TAS)
-True Heading = True Course + WCA
+
+// Wind Correction Angle calculation
+WCA = arcsin((Wind Speed / TAS) × sin(Wind Angle))
+
+// Heading to steer (SUBTRACT WCA from track)
+True Heading = True Course - WCA
 Magnetic Heading = True Heading - Variation
 
-Ground Speed calculation uses vector addition:
-GSx = TAS × sin(True Heading) + Wind Speed × sin(Wind Direction)
-GSy = TAS × cos(True Heading) + Wind Speed × cos(Wind Direction)
-Ground Speed = √(GSx² + GSy²)
+// Ground Speed using cosine rule
+Ground Speed = TAS × cos(WCA) + Wind Speed × cos(Wind Angle)
+
+Note: Previous implementation incorrectly added WCA to track.
+The corrected formula subtracts WCA as per standard aviation practice.
 ```
 
 ### Time Calculations
@@ -238,32 +251,67 @@ Time (minutes) = Distance (nm) / Ground Speed (kt) × 60
 ```
 
 ## Mobile Optimizations
-- Font size 16px minimum (prevents iOS zoom)
-- 2x2 grid navigation on mobile
-- Responsive input rows (stack on small screens)
-- Touch-friendly button sizes
-- Simplified table layouts for small screens
+
+### Navigation Layout
+- 5-column grid for all navigation tabs (was 2x2)
+- All tabs visible without scrolling
+- Active tab highlighting maintained
+
+### Spot Wind Controls
+- Altitude buttons: 3-column grid (Surface/5000/FL100)
+- Time buttons: 3-column grid for hours ahead
+- Significant space reduction while maintaining usability
+
+### Table Optimizations
+- Drift calculator columns balanced:
+  - Leg: 35px
+  - Track: 80px (was too narrow for 3 digits)
+  - Distance: 65px (reduced from default)
+  - Wind Dir/Spd: 60px each
+  - Outputs: appropriate widths
+
+### Button Sizing
+- Delete buttons: 9px font, 3px 6px padding on mobile
+- Uses !important to override default styles
+- Consistent across flight plan and drift calculator
+
+### Safari Compatibility
+- localStorage availability checks
+- Fallback URL parameter parsing
+- Manual import button as backup
+- Error handling for restricted environments
 
 ## Browser Compatibility
 - Modern browsers with ES6 support
-- Leaflet.js for map compatibility
+- Leaflet.js for map compatibility (v1.9.4)
 - Automatic BST/GMT handling for UK time
+- Mobile Safari: localStorage restrictions handled
+- Touch event support for mobile devices
+- Responsive design tested on iPhone/Android
 
 ## Default Values
 - TAS: 98 knots (Piper Warrior II cruise speed)
-- Magnetic Variation: -0.5° (White Waltham 2025)
-- Map center: 51.3°N, 0.5°W (Southern England)
+- Magnetic Variation: -0.5° (White Waltham 2025) - User adjustable
+- Map center: 51.5°N, 0.5°W (Southern England)
+- Default altitude: 3000ft for wind fetching
+- Time display: Shows current date, Zulu time, and UK local time
 
 ## flightplan.html - Interactive Flight Plan Map
 
 ### Functions
 
-**Purpose**: Visual flight planning with automatic wind data fetching
+**Purpose**: Visual flight planning with automatic wind data fetching and satellite view
+
+**initMap()**
+- Initializes Leaflet map with street and satellite layers
+- Adds layer control for map type switching
+- Centers on Southern England (51.5°N, 0.5°W)
 
 **addWaypoint(lat, lng)**
-- Adds waypoint marker to map
+- Adds waypoint marker to map with "WP" prefix
 - Calculates distance and track from previous waypoint
 - Triggers automatic wind fetching for new leg
+- Labels waypoints as "TO WP(n)" for clarity
 
 **fetchWindData(lat, lng, altitude)**
 - Fetches wind data from Open-Meteo API
@@ -273,8 +321,14 @@ Time (minutes) = Distance (nm) / Ground Speed (kt) × 60
 
 **exportFlightPlan()**
 - Compiles all leg data including wind information
-- Stores in localStorage for import to drift calculator
+- Stores in localStorage (with availability check for Safari)
 - Navigates to drift calculator with import parameter
+- Includes fallback for mobile Safari restrictions
+
+**Map Layers**
+- Street Layer: OpenStreetMap standard tiles
+- Satellite Layer: ESRI World Imagery tiles
+- Toggle control in top-right corner
 
 **updateAltitude(waypointId, altitude)**
 - Updates waypoint altitude and refetches wind data
@@ -310,6 +364,23 @@ Time (minutes) = Distance (nm) / Ground Speed (kt) × 60
 - Color-coded wind strength indicators
 - Bilinear interpolation for smooth wind transitions
 
+## Known Issues and Fixes
+
+### Navigation Disappearing
+- **Issue**: Navigation bar occasionally fails to load
+- **Fix**: Added retry mechanism with 100ms and 500ms delays
+- **Logging**: Console logs for debugging navigation generation
+
+### Mobile Safari Import
+- **Issue**: localStorage restricted in private browsing
+- **Fix**: Added availability check and URL parameter fallback
+- **Workaround**: Manual "Import Flight Plan" button
+
+### Wind Calculation Error (FIXED)
+- **Issue**: Was adding WCA to track instead of subtracting
+- **Fix**: Corrected formula in common.js calculateWindTriangle()
+- **Impact**: All pages now use correct unified calculation
+
 ## Future Extension Points
 The modular structure allows easy addition of:
 - New pages (add HTML file, link in navigation)
@@ -318,3 +389,5 @@ The modular structure allows easy addition of:
 - Different aircraft defaults (modify form defaults)
 - Additional calculations (extend common.js)
 - Weather overlays and visualizations
+- More map layers (terrain, aviation charts)
+- Flight plan saving/loading to files

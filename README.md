@@ -93,12 +93,28 @@ Simply open `index.html` in a modern web browser. The application is fully clien
 └── styles.css          # Common styles
 ```
 
-### Recent Updates
-- **Per-Leg Wind Data**: Drift calculator now supports individual wind inputs for each leg
+### Recent Updates (December 2024)
+
+#### Core Functionality
+- **Per-Leg Wind Data**: Drift calculator supports individual wind inputs for each leg
 - **Master Wind Cascading**: New legs automatically inherit master wind values
 - **Flight Plan Integration**: Seamless import from flight plan map to drift calculator
-- **Standardized Navigation**: Dynamic navigation generation from common.js
-- **Enhanced Wind Fetching**: Altitude-based wind data with pressure level interpolation
+- **Corrected Wind Calculations**: Fixed wind triangle formula to use proper aviation equations
+- **Satellite Map View**: Toggle between street and satellite views on flight plan map
+
+#### Mobile Optimizations
+- **Responsive Navigation**: All 5 tabs displayed side-by-side on mobile
+- **Compressed Controls**: Spot wind altitude/time buttons in 3-column grid
+- **Optimized Tables**: Balanced column widths with proper track input sizing
+- **Compact UI Elements**: Smaller delete buttons and better space utilization
+- **Current Date Display**: Added date to time display across all pages
+
+#### Technical Improvements
+- **Standardized Navigation**: Dynamic generation from common.js
+- **Enhanced Wind Fetching**: Altitude-based data with pressure level interpolation
+- **Unified Calculations**: Single source of truth for wind triangle math
+- **Mobile Safari Fixes**: Improved compatibility and import functionality
+- **Error Handling**: Better navigation loading with retry mechanisms
 
 ### API Integration
 - Weather data fetched via CORS proxy when needed
