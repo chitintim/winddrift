@@ -273,23 +273,53 @@
         let markers = {};
         let weatherData = {};
         
+        // Extended UK airports database
         const airports = {
-            'EGLL': { name: 'London Heathrow', lat: 51.4700, lon: -0.4543 },
-            'EGLF': { name: 'Farnborough', lat: 51.2758, lon: -0.7763 },
-            'EGTB': { name: 'Wycombe Air Park', lat: 51.6117, lon: -0.8083 },
-            'EGTK': { name: 'Oxford Kidlington', lat: 51.8369, lon: -1.3200 },
-            'EGVN': { name: 'RAF Brize Norton', lat: 51.7500, lon: -1.5836 },
-            'EGLK': { name: 'Blackbushe', lat: 51.3239, lon: -0.8475 },
-            'EGKA': { name: 'Shoreham', lat: 50.8356, lon: -0.2972 },
-            'EGHR': { name: 'Goodwood', lat: 50.8594, lon: -0.7592 },
-            'EGHI': { name: 'Southampton', lat: 50.9503, lon: -1.3568 },
-            'EGHH': { name: 'Bournemouth', lat: 50.7800, lon: -1.8425 },
-            'EGKK': { name: 'London Gatwick', lat: 51.1481, lon: -0.1903 },
-            'EGMD': { name: 'Lydd', lat: 50.9561, lon: 0.9392 },
-            'EGLC': { name: 'London City', lat: 51.5053, lon: 0.0553 },
-            'EGKB': { name: 'Biggin Hill', lat: 51.3308, lon: 0.0325 },
-            'EGTO': { name: 'Rochester', lat: 51.3519, lon: 0.5033 },
-            'EGSC': { name: 'Cambridge', lat: 52.2050, lon: 0.1750 }
+            // London & Southeast
+            'EGLL': { name: 'London Heathrow', lat: 51.4700, lon: -0.4543, priority: 1 },
+            'EGKK': { name: 'London Gatwick', lat: 51.1481, lon: -0.1903, priority: 1 },
+            'EGLC': { name: 'London City', lat: 51.5053, lon: 0.0553, priority: 1 },
+            'EGSS': { name: 'London Stansted', lat: 51.8850, lon: 0.2350, priority: 1 },
+            'EGGW': { name: 'London Luton', lat: 51.8747, lon: -0.3683, priority: 1 },
+            'EGLF': { name: 'Farnborough', lat: 51.2758, lon: -0.7763, priority: 2 },
+            'EGTB': { name: 'Wycombe Air Park', lat: 51.6117, lon: -0.8083, priority: 3 },
+            'EGTK': { name: 'Oxford Kidlington', lat: 51.8369, lon: -1.3200, priority: 2 },
+            'EGVN': { name: 'RAF Brize Norton', lat: 51.7500, lon: -1.5836, priority: 2 },
+            'EGLK': { name: 'Blackbushe', lat: 51.3239, lon: -0.8475, priority: 3 },
+            'EGKA': { name: 'Shoreham', lat: 50.8356, lon: -0.2972, priority: 2 },
+            'EGHR': { name: 'Goodwood', lat: 50.8594, lon: -0.7592, priority: 3 },
+            'EGHI': { name: 'Southampton', lat: 50.9503, lon: -1.3568, priority: 2 },
+            'EGHH': { name: 'Bournemouth', lat: 50.7800, lon: -1.8425, priority: 2 },
+            'EGMD': { name: 'Lydd', lat: 50.9561, lon: 0.9392, priority: 3 },
+            'EGKB': { name: 'Biggin Hill', lat: 51.3308, lon: 0.0325, priority: 2 },
+            'EGTO': { name: 'Rochester', lat: 51.3519, lon: 0.5033, priority: 3 },
+            'EGSC': { name: 'Cambridge', lat: 52.2050, lon: 0.1750, priority: 2 },
+            
+            // Midlands
+            'EGBB': { name: 'Birmingham', lat: 52.4539, lon: -1.7480, priority: 1 },
+            'EGNX': { name: 'East Midlands', lat: 52.8311, lon: -1.3281, priority: 1 },
+            'EGBE': { name: 'Coventry', lat: 52.3697, lon: -1.4797, priority: 2 },
+            'EGBJ': { name: 'Gloucestershire', lat: 51.8942, lon: -2.1672, priority: 2 },
+            
+            // North England
+            'EGCC': { name: 'Manchester', lat: 53.3537, lon: -2.2750, priority: 1 },
+            'EGNM': { name: 'Leeds Bradford', lat: 53.8659, lon: -1.6607, priority: 1 },
+            'EGNT': { name: 'Newcastle', lat: 55.0375, lon: -1.6917, priority: 1 },
+            'EGNV': { name: 'Durham Tees Valley', lat: 54.5093, lon: -1.4293, priority: 2 },
+            'EGGP': { name: 'Liverpool', lat: 53.3336, lon: -2.8497, priority: 1 },
+            
+            // Scotland
+            'EGPH': { name: 'Edinburgh', lat: 55.9500, lon: -3.3725, priority: 1 },
+            'EGPF': { name: 'Glasgow', lat: 55.8719, lon: -4.4331, priority: 1 },
+            'EGPD': { name: 'Aberdeen', lat: 57.2019, lon: -2.1978, priority: 1 },
+            'EGPE': { name: 'Inverness', lat: 57.5425, lon: -4.0475, priority: 2 },
+            
+            // Wales
+            'EGFF': { name: 'Cardiff', lat: 51.3967, lon: -3.3433, priority: 1 },
+            
+            // Northern Ireland  
+            'EGAA': { name: 'Belfast International', lat: 54.6575, lon: -6.2158, priority: 1 },
+            'EGAC': { name: 'Belfast City', lat: 54.6181, lon: -5.8725, priority: 2 }
         };
         
         // Weather phenomena dictionary
@@ -410,46 +440,109 @@
             return decoded.join(' ') || wxString;
         }
         
+        // Track visible airports
+        let visibleAirports = new Set();
+        
         function initMap() {
-            map = L.map('weatherMap').setView([51.3, -0.5], 8);
+            map = L.map('weatherMap').setView([53.0, -2.0], 6);  // Center on UK
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 11,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
             
-            // Load all airports with grey markers initially
+            // Load airports based on current view
+            loadAirportsInView();
+            
+            // Reload when map moves or zooms
+            map.on('moveend', debounce(loadAirportsInView, 300));
+            map.on('zoomend', debounce(loadAirportsInView, 300));
+        }
+        
+        // Debounce function to prevent too many updates
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        
+        function loadAirportsInView() {
+            const bounds = map.getBounds();
+            const zoom = map.getZoom();
+            
+            // Determine which airports to show based on zoom level
+            const previousVisible = new Set(visibleAirports);
+            visibleAirports.clear();
+            
             Object.keys(airports).forEach(icao => {
                 const airport = airports[icao];
+                const inBounds = bounds.contains([airport.lat, airport.lon]);
                 
-                // Create icon with label
-                const icon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `
-                        <div style="text-align: center;">
-                            <div class="leaflet-marker-label" style="margin-bottom: 2px;">${icao}</div>
-                            <div style="background: #6b7280; width: 20px; height: 20px; border-radius: 50%; 
-                                        border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-                                        margin: 0 auto;"></div>
-                        </div>`,
-                    iconSize: [40, 35],
-                    iconAnchor: [20, 25],
-                    popupAnchor: [0, -20]
-                });
-                
-                const marker = L.marker([airport.lat, airport.lon], { icon })
-                    .bindPopup(`<b>${icao}</b><br>${airport.name}<br><a href="#" onclick="fetchWeather('${icao}'); return false;">Get Weather</a>`)
-                    .addTo(map);
-                
-                markers[icao] = marker;
+                if (inBounds) {
+                    // Show based on priority and zoom
+                    if (zoom <= 6 && airport.priority === 1) {
+                        // Show only major airports at low zoom
+                        visibleAirports.add(icao);
+                    } else if (zoom > 6 && zoom <= 8 && airport.priority <= 2) {
+                        // Show priority 1 and 2 airports at medium zoom
+                        visibleAirports.add(icao);
+                    } else if (zoom > 8) {
+                        // Show all airports at high zoom
+                        visibleAirports.add(icao);
+                    }
+                }
             });
             
-            // Load weather for all airports
+            // Remove markers that are no longer visible
+            previousVisible.forEach(icao => {
+                if (!visibleAirports.has(icao) && markers[icao]) {
+                    map.removeLayer(markers[icao]);
+                    delete markers[icao];
+                }
+            });
+            
+            // Add new markers for visible airports
+            visibleAirports.forEach(icao => {
+                if (!markers[icao]) {
+                    const airport = airports[icao];
+                    
+                    // Create icon with label
+                    const icon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `
+                            <div style="text-align: center;">
+                                <div class="leaflet-marker-label" style="margin-bottom: 2px;">${icao}</div>
+                                <div style="background: #6b7280; width: 20px; height: 20px; border-radius: 50%; 
+                                            border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+                                            margin: 0 auto;"></div>
+                            </div>`,
+                        iconSize: [40, 35],
+                        iconAnchor: [20, 25],
+                        popupAnchor: [0, -20]
+                    });
+                    
+                    const marker = L.marker([airport.lat, airport.lon], { icon })
+                        .bindPopup(`<b>${icao}</b><br>${airport.name}<br><a href="#" onclick="fetchWeather('${icao}'); return false;">Get Weather</a>`)
+                        .addTo(map);
+                    
+                    markers[icao] = marker;
+                    
+                    // If we already have weather data, update the marker
+                    if (weatherData[icao]) {
+                        updateMarker(icao);
+                    }
+                }
+            });
+            
+            // Load weather for newly visible airports
             loadAllWeather();
         }
         
         async function loadAllWeather() {
-            for (const icao of Object.keys(airports)) {
+            // Only load weather for visible airports
+            for (const icao of visibleAirports) {
                 try {
                     const metarResponse = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
                     const metarData = await metarResponse.json();
